@@ -1,6 +1,8 @@
-use std::{fmt, path::PathBuf};
+use std::{fmt, ops::Deref, path::PathBuf};
 
 use ecow::EcoString;
+
+use crate::{PrimKind, Primitive};
 
 pub fn lex(
     src: InputSrc,
@@ -29,12 +31,16 @@ fn lex_impl(
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
+    Primitive(Primitive),
+    Number,
     OpenParen,
     CloseParen,
     OpenBracket,
     CloseBracket,
     OpenCurly,
     CloseCurly,
+    Equals,
+    Bar,
     Newline,
 }
 
@@ -54,6 +60,9 @@ impl<'a> Lexer<'a> {
         self.loc.char += 1;
         self.loc.byte += c.len_utf8();
         Some(c)
+    }
+    fn next_char_exact(&mut self, c: char) -> bool {
+        self.next_char_if(|c_| c_ == c).is_some()
     }
     fn end(&mut self, start: Loc, token: impl Into<Token>) {
         let end = self.loc;
@@ -84,15 +93,44 @@ impl<'a> Lexer<'a> {
                 ']' => self.end(start, Token::CloseBracket),
                 '{' => self.end(start, Token::OpenCurly),
                 '}' => self.end(start, Token::CloseCurly),
+                '=' => self.end(start, Token::Equals),
+                '|' => self.end(start, Token::Bar),
+                '\n' => self.end(start, Token::Newline),
                 ' ' | '\t' | '\r' => {}
-                c => return Err(self.span(start).sp(LexError::InvalidChar(c))),
+                c if c.is_ascii_digit()
+                    || c == '`' && self.next_char_if(|c| c.is_ascii_digit()).is_some() =>
+                {
+                    while self.next_char_if(|c| c.is_ascii_digit()).is_some() {}
+                    if self.next_char_exact('.') {
+                        while self.next_char_if(|c| c.is_ascii_digit()).is_some() {}
+                    }
+                    let reset = self.loc;
+                    if self.next_char_exact('e') || self.next_char_exact('E') {
+                        self.next_char_exact('`');
+                        let mut got_dec = false;
+                        while self.next_char_if(|c| c.is_ascii_digit()).is_some() {
+                            got_dec = true;
+                        }
+                        if !got_dec {
+                            self.loc = reset;
+                        }
+                    }
+                    self.end(start, Token::Number);
+                }
+                c => {
+                    if let Some(prim) = Primitive::from_glyph(c) {
+                        self.end(start, Token::Primitive(prim));
+                    } else {
+                        return Err(self.span(start).sp(LexError::InvalidChar(c)));
+                    }
+                }
             }
         }
         Ok(self.tokens)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LexError {
     InvalidChar(char),
 }
@@ -111,7 +149,7 @@ pub struct Loc {
     pub byte: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
     pub start: Loc,
     pub end: Loc,
@@ -135,18 +173,82 @@ impl Span {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Sp<T> {
-    pub value: T,
-    pub span: Span,
+impl fmt::Debug for Span {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}-{}", self.src, self.start.char, self.end.char)
+    }
 }
 
-impl<T> Sp<T> {
-    pub fn new(value: T, span: Span) -> Self {
+impl fmt::Display for Span {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}-{}", self.start.char, self.end.char)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Sp<T, S = Span> {
+    pub value: T,
+    pub span: S,
+}
+
+pub type HumanSp<T> = Sp<T, HumanSpan>;
+
+impl<T, S> Sp<T, S> {
+    pub fn new(value: T, span: S) -> Self {
         Self { value, span }
     }
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Sp<U> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Sp<U, S> {
         Sp::new(f(self.value), self.span)
+    }
+}
+
+impl<T, S> fmt::Debug for Sp<T, S>
+where
+    T: fmt::Debug,
+    S: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: ", self.span)?;
+        self.value.fmt(f)
+    }
+}
+
+impl<T, S> fmt::Display for Sp<T, S>
+where
+    T: fmt::Display,
+    S: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.span, self.value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct HumanLoc {
+    pub line: usize,
+    pub col: usize,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct HumanSpan {
+    pub start: HumanLoc,
+    pub end: HumanLoc,
+    pub src: InputSrc,
+}
+
+impl fmt::Debug for HumanSpan {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl fmt::Display for HumanSpan {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.src {
+            InputSrc::File(path) => write!(f, "{}:", path.display())?,
+            InputSrc::Str => {}
+        }
+        write!(f, "{}:{}", self.start.line, self.start.col)
     }
 }
 
@@ -171,4 +273,50 @@ impl Input {
     }
 }
 
-pub type Inputs = Vec<Input>;
+#[derive(Debug, Clone, Default)]
+pub struct Inputs {
+    pub inputs: Vec<Input>,
+}
+
+impl Inputs {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn push(&mut self, input: Input) {
+        self.inputs.push(input);
+    }
+    pub fn span_text(&self, span: Span) -> &str {
+        let text = self.inputs[span.src].text.as_str();
+        &text[span.start.byte..span.end.byte]
+    }
+    pub fn human_loc(&self, loc: Loc, src: usize) -> HumanLoc {
+        let text = self.inputs[src].text.as_str();
+        let line = text[..loc.byte].chars().filter(|c| *c == '\n').count() + 1;
+        let col = text[..loc.byte]
+            .chars()
+            .rev()
+            .take_while(|c| *c != '\n')
+            .count()
+            + 1;
+        HumanLoc { line, col }
+    }
+    pub fn human_span(&self, span: Span) -> HumanSpan {
+        let start = self.human_loc(span.start, span.src);
+        let end = self.human_loc(span.end, span.src);
+        HumanSpan {
+            start,
+            end,
+            src: self.inputs[span.src].src.clone(),
+        }
+    }
+    pub fn human_sp<T>(&self, sp: Sp<T>) -> HumanSp<T> {
+        Sp::new(sp.value, self.human_span(sp.span))
+    }
+}
+
+impl Deref for Inputs {
+    type Target = [Input];
+    fn deref(&self) -> &Self::Target {
+        &self.inputs
+    }
+}

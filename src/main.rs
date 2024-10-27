@@ -2,11 +2,17 @@ use std::{env, fmt::Display, fs, path::Path, process::exit};
 
 use colored::Colorize;
 
-use ufel::{lex, InputSrc};
+use ufel::{parse, InputSrc, Inputs};
 
 fn fail<T>(e: impl Display) -> T {
     eprintln!("{e}");
     exit(1);
+}
+
+enum Command {
+    Run,
+    Watch,
+    Help,
 }
 
 fn main() {
@@ -15,9 +21,22 @@ fn main() {
     let mut args = args_strs.as_slice();
     let mut path: Option<&Path> = None;
     let mut help = false;
+    let mut command = None;
     loop {
         match args {
             [] => break,
+            ["watch", rest @ ..] => {
+                command = Some(Command::Watch);
+                args = rest;
+            }
+            ["run", rest @ ..] => {
+                command = Some(Command::Run);
+                args = rest;
+            }
+            ["help", rest @ ..] => {
+                command = Some(Command::Help);
+                args = rest;
+            }
             ["-h" | "--help", rest @ ..] => {
                 help = true;
                 args = rest;
@@ -38,18 +57,23 @@ fn main() {
         }
     }
 
-    if help {
-        show_help();
-        return;
+    match command {
+        Some(Command::Run) => run_maybe_path(path, false),
+        Some(Command::Watch) => todo!(),
+        Some(Command::Help) => show_help(),
+        None if help => show_help(),
+        None => run_maybe_path(path, args_strs.is_empty()),
     }
+}
 
+fn run_maybe_path(path: Option<&Path>, empty: bool) {
     let path = if let Some(path) = path {
         path
     } else {
         let path = Path::new("main.fel");
-        if !path.exists() && args_strs.is_empty() {
+        if !path.exists() && empty {
             show_help();
-            return;
+            exit(0);
         }
         path
     };
@@ -60,10 +84,13 @@ fn main() {
 }
 
 fn run(src: InputSrc, text: &str) {
-    let mut inputs = Vec::new();
-    let tokens = lex(src, text, &mut inputs).unwrap();
-    for token in tokens {
-        println!("{token:?}");
+    let mut inputs = Inputs::new();
+    let (items, errors) = parse(src, text, &mut inputs);
+    for item in items {
+        println!("{item:#?}");
+    }
+    for error in errors {
+        println!("{}", inputs.human_sp(error))
     }
 }
 

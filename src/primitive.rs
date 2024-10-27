@@ -1,116 +1,10 @@
 use enum_iterator::{all, All, Sequence};
 
-macro_rules! primitive {
-    ($($name:ident($ty:ty)),* $(,)?) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence)]
-        pub enum Primitive {
-            $($name($ty),)*
-        }
-
-        impl PrimKind for Primitive {
-            fn glyph(&self) -> char {
-                match self {
-                    $(Self::$name(p) => p.glyph(),)*
-                }
-            }
-            fn name(&self) -> &'static str {
-                match self {
-                    $(Self::$name(p) => p.name(),)*
-                }
-            }
-            fn from_glyph(c: char) -> Option<Self> {
-                None $(.or_else(|| <$ty>::from_glyph(c).map(Self::$name)))*
-            }
-            fn from_name(name: &str) -> Option<Self> {
-                None $(.or_else(|| <$ty>::from_name(name).map(Self::$name)))*
-            }
-            fn description(&self) -> &'static str {
-                match self {
-                    $(Self::$name(p) => p.description(),)*
-                }
-            }
-            fn full_docs(&self) -> &'static str {
-                match self {
-                    $(Self::$name(p) => p.full_docs(),)*
-                }
-            }
-        }
-
-        $(
-            impl From<$ty> for Primitive {
-                fn from(p: $ty) -> Self {
-                    Self::$name(p)
-                }
-            }
-        )*
-    }
-}
-
 primitive!(Mon(Monadic), Dy(Dyadic), MonMod(MonMod), DyMod(DyMod));
 
-pub trait PrimKind: Sized + Sequence {
-    fn glyph(&self) -> char;
-    fn name(&self) -> &'static str;
-    fn from_glyph(c: char) -> Option<Self>;
-    fn from_name(name: &str) -> Option<Self>;
-    fn description(&self) -> &'static str;
-    fn full_docs(&self) -> &'static str;
-    fn all() -> All<Self> {
-        all::<Self>()
-    }
-}
-
-macro_rules! prim {
-    (   $prim:ident,
-        $(
-            #[doc = $doc:literal]
-            $(#[doc = $doc2:literal])*
-            ($variant:ident, $name:literal, $glyph:literal)
-        ),* $(,)?
-    ) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence)]
-        pub enum $prim {
-            $($variant,)*
-        }
-
-        impl PrimKind for $prim {
-            fn glyph(&self) -> char {
-                match self {
-                    $(Self::$variant => $glyph,)*
-                }
-            }
-            fn name(&self) -> &'static str {
-                match self {
-                    $(Self::$variant => $name,)*
-                }
-            }
-            fn from_glyph(c: char) -> Option<Self> {
-                match c {
-                    $($glyph => Some(Self::$variant),)*
-                    _ => None,
-                }
-            }
-            fn from_name(name: &str) -> Option<Self> {
-                match name {
-                    $($name => Some(Self::$variant),)*
-                    _ => None,
-                }
-            }
-            fn description(&self) -> &'static str {
-                match self {
-                    $(Self::$variant => $doc,)*
-                }
-            }
-            fn full_docs(&self) -> &'static str {
-                match self {
-                    $(Self::$variant => $doc,)*
-                }
-            }
-        }
-    }
-}
-
 prim!(Monadic,
+    /// Do nothing with an array
+    (Identity, "identity", '.'),
     /// Negate an array
     (Neg, "negate", '`'),
     /// Get the length of an array
@@ -131,17 +25,39 @@ prim!(Dyadic,
     (Div, "divide", '/'),
     /// Modulo two arrays
     (Mod, "modulo", 'M'),
+    /// Check for equality between two arrays
+    (Eq, "equal", 'E'),
+    /// Check for inequality between two arrays
+    (Neq, "not equal", 'N'),
+    /// Check if an array is less than another
+    (Lt, "less than", 'L'),
+    /// Check if an array is greater than another
+    (Gt, "greater than", 'G'),
 );
 prim!(MonMod,
+    /// Temporarily pop a value from the stack
+    (Dip, "dip", ','),
     /// Reduce with a function
     (Reduce, "reduce", 'r'),
     /// Scan with a function
     (Scan, "scan", 's'),
 );
 prim!(DyMod,
-    /// Temporarily pop a value from the stack
-    (Dip, "dip", 'd'),
+    /// Call two functions on the same sets of values
+    (Fork, "fork", 'F'),
 );
+
+pub trait PrimKind: Sized + Sequence {
+    fn glyph(&self) -> char;
+    fn name(&self) -> &'static str;
+    fn from_glyph(c: char) -> Option<Self>;
+    fn from_name(name: &str) -> Option<Self>;
+    fn description(&self) -> &'static str;
+    fn full_docs(&self) -> &'static str;
+    fn all() -> All<Self> {
+        all::<Self>()
+    }
+}
 
 #[cfg(test)]
 #[test]
@@ -199,3 +115,101 @@ fn gen_prim_tables() {
 
     std::fs::write("primitives.md", md).unwrap();
 }
+
+macro_rules! primitive {
+    ($($name:ident($ty:ty)),* $(,)?) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence)]
+        pub enum Primitive {
+            $($name($ty),)*
+        }
+
+        impl PrimKind for Primitive {
+            fn glyph(&self) -> char {
+                match self {
+                    $(Self::$name(p) => p.glyph(),)*
+                }
+            }
+            fn name(&self) -> &'static str {
+                match self {
+                    $(Self::$name(p) => p.name(),)*
+                }
+            }
+            fn from_glyph(c: char) -> Option<Self> {
+                None $(.or_else(|| <$ty>::from_glyph(c).map(Self::$name)))*
+            }
+            fn from_name(name: &str) -> Option<Self> {
+                None $(.or_else(|| <$ty>::from_name(name).map(Self::$name)))*
+            }
+            fn description(&self) -> &'static str {
+                match self {
+                    $(Self::$name(p) => p.description(),)*
+                }
+            }
+            fn full_docs(&self) -> &'static str {
+                match self {
+                    $(Self::$name(p) => p.full_docs(),)*
+                }
+            }
+        }
+
+        $(
+            impl From<$ty> for Primitive {
+                fn from(p: $ty) -> Self {
+                    Self::$name(p)
+                }
+            }
+        )*
+    }
+}
+use primitive;
+
+macro_rules! prim {
+    (   $prim:ident,
+        $(
+            #[doc = $doc:literal]
+            $(#[doc = $doc2:literal])*
+            ($variant:ident, $name:literal, $glyph:literal)
+        ),* $(,)?
+    ) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence)]
+        pub enum $prim {
+            $($variant,)*
+        }
+
+        impl PrimKind for $prim {
+            fn glyph(&self) -> char {
+                match self {
+                    $(Self::$variant => $glyph,)*
+                }
+            }
+            fn name(&self) -> &'static str {
+                match self {
+                    $(Self::$variant => $name,)*
+                }
+            }
+            fn from_glyph(c: char) -> Option<Self> {
+                match c {
+                    $($glyph => Some(Self::$variant),)*
+                    _ => None,
+                }
+            }
+            fn from_name(name: &str) -> Option<Self> {
+                match name {
+                    $($name => Some(Self::$variant),)*
+                    _ => None,
+                }
+            }
+            fn description(&self) -> &'static str {
+                match self {
+                    $(Self::$variant => $doc,)*
+                }
+            }
+            fn full_docs(&self) -> &'static str {
+                match self {
+                    $(Self::$variant => $doc,)*
+                }
+            }
+        }
+    }
+}
+use prim;
