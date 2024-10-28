@@ -1,6 +1,6 @@
 use ecow::{eco_vec, EcoVec};
 
-use crate::{pervade::*, Array, Dyadic, Mod, Ori, SigNode, Ufel, UfelResult};
+use crate::{pervade::*, Array, Dyadic, Element, Mod, Ori, SigNode, Ufel, UfelResult};
 
 fn flip<T>(f: impl Fn(T, T) -> T) -> impl Fn(T, T) -> T {
     move |a, b| f(b, a)
@@ -40,7 +40,7 @@ pub fn reduce(f: SigNode, rt: &mut Ufel) -> UfelResult {
     Ok(())
 }
 
-fn reduce_pervasive<T: Clone>(
+fn reduce_pervasive<T: Element>(
     mut a: Array<T>,
     identity: T,
     f: impl Fn(T, T) -> T,
@@ -83,6 +83,7 @@ fn reduce_pervasive<T: Clone>(
                 .chunks_exact(row_count)
                 .map(|chunk| chunk[0].clone())
                 .collect();
+            println!("{:?}", acc);
             let slice = acc.make_mut();
             for i in 1..row_count {
                 for (acc, elem) in slice.iter_mut().zip(a.data.chunks_exact(row_count)) {
