@@ -98,7 +98,7 @@ impl<T: Element> Hash for Array<T> {
     }
 }
 
-pub trait Element: fmt::Debug + Clone + Send + Sync + 'static {
+pub trait Element: fmt::Debug + fmt::Display + Clone + Send + Sync + 'static {
     fn array_eq(&self, other: &Self) -> bool;
     fn array_hash<H: Hasher>(&self, state: &mut H);
 }

@@ -10,8 +10,10 @@
 | `length` | `l` |  Get the length of an array |
 | `shape` | `h` |  Get the shape of an array |
 | `form` | `f` |  Get the form of an array |
+| `range` | `i` |  Generate a range of numbers or indices for a form |
 | `first` | `a` |  Get the first row of an array |
 | `transpose` | `t` |  Rotate the form of an array |
+| `swap` | `w` |  Swap the axes of an array's form |
 
 ## Dyadic Functions
 
@@ -27,6 +29,7 @@
 | `greater than` | `G` |  Check if an array is greater than another |
 | `min` | `N` |  Get the minimum of two arrays |
 | `max` | `X` |  Get the maximum of two arrays |
+| `chunk` | `K` |  Chunk an array |
 
 ## Monadic Modifiers
 

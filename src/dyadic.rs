@@ -1,6 +1,6 @@
-use crate::{Array, Form, FormDims, Ori, Ufel, UfelResult};
+use crate::{Array, Element, Form, FormDims, Ori, Ufel, UfelResult};
 
-impl<T: Clone> Array<T> {
+impl<T: Element> Array<T> {
     pub fn chunk(mut self, size: Array, rt: &Ufel) -> UfelResult<Self> {
         if !size.form.is_normal() {
             return Err(rt.error(format!(
@@ -8,7 +8,7 @@ impl<T: Clone> Array<T> {
                 size.form
             )));
         }
-        if self.form.hori_rank() > 1 {
+        if size.form.hori_rank() > 1 {
             return Err(rt.error(format!(
                 "Chunk size must be a scalar or list, but its form is {:?}",
                 size.form
@@ -48,12 +48,12 @@ impl<T: Clone> Array<T> {
                         new_dims.push(dim / sz);
                         dests.push(i);
                         new_dims.push(sz);
-                        dests.push(i + size.len());
+                        dests.push(i + shape.len());
                     } else {
                         new_dims.push(dim);
                         dests.push(i);
                         new_dims.push(1);
-                        dests.push(i + size.len());
+                        dests.push(i + shape.len());
                     }
                 }
                 for i in 1..self.form.vert_rank() {

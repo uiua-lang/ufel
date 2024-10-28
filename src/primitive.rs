@@ -27,6 +27,8 @@ prim!(Monadic,
     (First, "first", 'a'),
     /// Rotate the form of an array
     (Transpose, "transpose", 't'),
+    /// Swap the axes of an array's form
+    (Swap, "swap", 'w'),
 );
 prim!(Dyadic,
     /// Add two arrays

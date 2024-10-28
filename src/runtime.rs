@@ -82,6 +82,7 @@ impl Ufel {
             Monadic::Range => a.range(self)?,
             Monadic::First => a.first(self)?,
             Monadic::Transpose => a.transpose(self)?,
+            Monadic::Swap => a.swap(self)?,
         };
         self.push(res);
         Ok(())

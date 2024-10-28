@@ -1,6 +1,6 @@
 use ecow::{eco_vec, EcoVec};
 
-use crate::{cowslice::CowSlice, Array, Form, FormDims, Monadic, Ori, Ufel, UfelResult};
+use crate::{cowslice::CowSlice, Array, Element, Form, FormDims, Monadic, Ori, Ufel, UfelResult};
 
 impl Array {
     pub fn range(self, rt: &Ufel) -> UfelResult<Self> {
@@ -50,7 +50,7 @@ impl Array {
     }
 }
 
-impl<T: Clone> Array<T> {
+impl<T: Element> Array<T> {
     pub fn first(self, rt: &Ufel) -> UfelResult<Self> {
         Ok(match rt.ori() {
             Ori::Hori => {
@@ -89,6 +89,15 @@ impl<T: Clone> Array<T> {
             Ori::Vert => axes.rotate_left(stride),
         };
         self.move_axes(&axes, rt)
+    }
+    pub fn swap(mut self, rt: &Ufel) -> UfelResult<Self> {
+        let mut new_form = self.form.clone();
+        new_form.swap();
+        if new_form.is_normal() {
+            self.form = new_form;
+            return Ok(self);
+        }
+        self.move_axes(new_form.dims(), rt)
     }
     pub(crate) fn move_axes(self, indices: &[usize], rt: &Ufel) -> UfelResult<Self> {
         fn derive_orient_data(

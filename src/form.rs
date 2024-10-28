@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     fmt,
+    mem::swap,
     ops::{Deref, Index, IndexMut, Not},
 };
 
@@ -16,6 +17,7 @@ pub struct Form {
 pub type FormDims = TinyVec<[usize; 3]>;
 
 impl Form {
+    #[track_caller]
     pub fn new(vert: usize, hori: usize, dims: FormDims) -> Self {
         let form = Self { vert, hori, dims };
         form.validate();
@@ -154,6 +156,15 @@ impl Form {
     }
     pub fn prefixes_match(&self, other: &Self) -> bool {
         self.is_prefix_of(other) || other.is_prefix_of(self)
+    }
+    pub fn swap(&mut self) {
+        let mut dims = FormDims::with_capacity(self.dims.len());
+        for j in 0..self.hori {
+            for i in 0..self.vert {
+                dims.push(self.dims[i * self.hori + j]);
+            }
+        }
+        swap(&mut self.vert, &mut self.hori);
     }
     pub fn fix(&mut self, ori: Ori) {
         let new_vert = (self.vert + (ori == Ori::Vert) as usize).max(1);
