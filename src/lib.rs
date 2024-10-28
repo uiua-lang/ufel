@@ -6,9 +6,11 @@ mod error;
 mod form;
 mod lex;
 mod parse;
+mod pervade;
 mod primitive;
 mod runtime;
 mod tree;
+mod value;
 
 pub use {
     array::*,

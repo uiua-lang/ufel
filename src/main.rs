@@ -2,7 +2,7 @@ use std::{env, fmt::Display, fs, path::Path, process::exit};
 
 use colored::Colorize;
 
-use ufel::{parse, InputSrc, Inputs, Ufel};
+use ufel::{InputSrc, Ufel};
 
 fn fail<T>(e: impl Display) -> T {
     eprintln!("{e}");

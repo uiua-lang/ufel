@@ -40,7 +40,7 @@ impl Ufel {
                 rt.exec(*inner)?;
                 rt.require_height(len)?;
                 let start = rt.stack.len() - len;
-                let rows: Vec<Array> = rt.stack.drain(start..).collect();
+                let rows: Vec<Array> = rt.stack.drain(start..).rev().collect();
                 let arr = Array::from_row_arrays(rows, rt)?;
                 rt.push(arr);
                 Ok(())
@@ -66,29 +66,35 @@ impl Ufel {
     }
     fn monadic(&mut self, prim: Monadic) -> UfelResult {
         let a = self.pop(1)?;
-        match prim {
-            Monadic::Identity => todo!(),
-            Monadic::Neg => todo!(),
+        let res = match prim {
+            Monadic::Identity => a,
+            Monadic::Neg => a.neg(),
+            Monadic::Not => a.not(),
+            Monadic::Abs => a.abs(),
+            Monadic::Sign => a.sign(),
             Monadic::Len => todo!(),
             Monadic::Shape => todo!(),
             Monadic::Form => todo!(),
-        }
+        };
+        self.push(res);
         Ok(())
     }
     fn dyadic(&mut self, prim: Dyadic) -> UfelResult {
         let a = self.pop(1)?;
         let b = self.pop(2)?;
-        match prim {
-            Dyadic::Add => todo!(),
-            Dyadic::Sub => todo!(),
-            Dyadic::Mul => todo!(),
-            Dyadic::Div => todo!(),
-            Dyadic::Mod => todo!(),
-            Dyadic::Eq => todo!(),
-            Dyadic::Neq => todo!(),
-            Dyadic::Lt => todo!(),
-            Dyadic::Gt => todo!(),
-        }
+        let res = match prim {
+            Dyadic::Add => a.add(b, 0, 0, self)?,
+            Dyadic::Sub => a.sub(b, 0, 0, self)?,
+            Dyadic::Mul => a.mul(b, 0, 0, self)?,
+            Dyadic::Div => a.div(b, 0, 0, self)?,
+            Dyadic::Mod => a.mod_(b, 0, 0, self)?,
+            Dyadic::Eq => a.eq(b, 0, 0, self)?,
+            Dyadic::Lt => a.lt(b, 0, 0, self)?,
+            Dyadic::Gt => a.gt(b, 0, 0, self)?,
+            Dyadic::Min => a.min(b, 0, 0, self)?,
+            Dyadic::Max => a.max(b, 0, 0, self)?,
+        };
+        self.push(res);
         Ok(())
     }
     fn mon_mod(&mut self, prim: Mod, f: SigNode) -> UfelResult {

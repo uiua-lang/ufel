@@ -161,7 +161,7 @@ impl<T: fmt::Debug> fmt::Debug for Array<T> {
         } else {
             write!(f, "[")?;
             if !self.form.is_list() {
-                write!(f, "{:?}", self.form)?;
+                write!(f, "{:?} ", self.form)?;
             }
             for (i, elem) in self.data.iter().enumerate() {
                 if i > 0 {
@@ -181,7 +181,7 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
         } else {
             write!(f, "[")?;
             if !self.form.is_list() {
-                write!(f, "{:?}", self.form)?;
+                write!(f, "{:?} ", self.form)?;
             }
             for (i, elem) in self.data.iter().enumerate() {
                 if i > 0 {

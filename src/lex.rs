@@ -316,7 +316,7 @@ impl Inputs {
         let text = self.inputs[span.src].text.as_str();
         let span = self.human_span(span);
         let message = message.into();
-        let line = text.split('\n').nth(span.start.line).unwrap();
+        let line = text.split('\n').nth(span.start.line - 1).unwrap();
         LocatedError {
             span,
             message,

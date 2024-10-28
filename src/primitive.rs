@@ -9,6 +9,12 @@ prim!(Monadic,
     (Identity, "identity", '.'),
     /// Negate an array
     (Neg, "negate", '`'),
+    /// Not an array
+    (Not, "not", 'n'),
+    /// Get the absolute value of an array
+    (Abs, "abs", 'a'),
+    /// Get the sign of an array
+    (Sign, "sign", 'g'),
     /// Get the length of an array
     (Len, "length", 'l'),
     /// Get the shape of an array
@@ -29,12 +35,14 @@ prim!(Dyadic,
     (Mod, "modulo", 'M'),
     /// Check for equality between two arrays
     (Eq, "equal", 'E'),
-    /// Check for inequality between two arrays
-    (Neq, "not equal", 'N'),
     /// Check if an array is less than another
     (Lt, "less than", 'L'),
     /// Check if an array is greater than another
     (Gt, "greater than", 'G'),
+    /// Get the minimum of two arrays
+    (Min, "min", 'N'),
+    /// Get the maximum of two arrays
+    (Max, "max", 'X'),
 );
 prim!(Mod,
     /// Temporarily pop a value from the stack

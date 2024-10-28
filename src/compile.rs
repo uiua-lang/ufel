@@ -59,7 +59,7 @@ impl Compiler {
     }
     fn line(&mut self, words: Vec<Sp<Word>>) -> UfelResult<Node> {
         let mut node = Node::empty();
-        for word in words {
+        for word in words.into_iter().rev() {
             node.push(self.word(word)?);
         }
         Ok(node)
@@ -76,7 +76,7 @@ impl Compiler {
             }
             Word::Array(array) => {
                 let mut inner = Node::empty();
-                for line in array.lines {
+                for line in array.lines.into_iter().rev() {
                     inner.push(self.line(line)?);
                 }
                 let span = self.add_span(word.span);
