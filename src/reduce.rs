@@ -1,4 +1,4 @@
-use ecow::{eco_vec, EcoVec};
+use ecow::eco_vec;
 
 use crate::{pervade::*, Array, Dyadic, Element, Mod, Ori, SigNode, Ufel, UfelResult};
 
@@ -78,19 +78,14 @@ fn reduce_pervasive<T: Element>(
             Array::new(row_form, a.data)
         }
         Ori::Vert => {
-            let mut acc: EcoVec<T> = a
-                .data
-                .chunks_exact(row_count)
-                .map(|chunk| chunk[0].clone())
-                .collect();
-            println!("{:?}", acc);
-            let slice = acc.make_mut();
-            for i in 1..row_count {
-                for (acc, elem) in slice.iter_mut().zip(a.data.chunks_exact(row_count)) {
-                    *acc = f(acc.clone(), elem[i].clone());
+            let (acc, rest) = a.data.as_mut_slice().split_at_mut(row_len);
+            for chunk in rest.chunks_exact(row_len) {
+                for (acc, elem) in acc.iter_mut().zip(chunk) {
+                    *acc = f(acc.clone(), elem.clone());
                 }
             }
-            Array::new(row_form, acc.into())
+            a.data.truncate(row_len);
+            Array::new(row_form, a.data)
         }
     }
 }

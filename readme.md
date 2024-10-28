@@ -5,9 +5,11 @@ Ufel ([**U**iua](https://uiua.org) **f**orm **e**xperimentation **l**anguage) is
 In array languages, an array has a properly called its *shape*, which is a list of natural numbers than describes how elements are layed out along the array's axes.
 
 In array languages like APL, J, BQN, Kap, TinyAPL, and Uiua, the shape of an array is always 1-dimensional.
-Ufel explores the possibility of multi-dimensional shapes.
+Ufel explores the possibility of 2-dimensional shapes, which it calls *forms*.
 
 Ufel should not be used for anything other than experimentation. Features are subject to massive change.
+
+**The interpreter is may be buggy and/or crash. Many things are not implemented, and some things may be implemented incorrectly.**
 
 See [primitives.md](primitives.md) for a list of primitives.
 
@@ -184,7 +186,7 @@ Notice that if we leave all the axes vertical instead of `(w)swap`ping, modifier
 ```ufel
 16i [4 2] vC ~r+
 # ╭─
-# ╷  1  5  9 13
-#   17 21 25 29
+# ╷  8 10 12 14
+#   16 18 20 22
 #               ╯
 ```
