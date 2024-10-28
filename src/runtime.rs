@@ -99,6 +99,7 @@ impl Ufel {
             Dyadic::Gt => a.gt(b, 0, 0, self)?,
             Dyadic::Min => a.min(b, 0, 0, self)?,
             Dyadic::Max => a.max(b, 0, 0, self)?,
+            Dyadic::Chunk => b.chunk(a, self)?,
         };
         self.push(res);
         Ok(())
@@ -158,7 +159,7 @@ impl Ufel {
                 self.exec(f.node)?;
             }
             Mod::Reduce => reduce(f, self)?,
-            Mod::Scan => todo!(),
+            Mod::Scan => todo!("scan"),
         }
         Ok(())
     }

@@ -34,6 +34,7 @@ pub fn reduce(f: SigNode, rt: &mut Ufel) -> UfelResult {
         (Dyadic::Gt, _) => reduce_pervasive(a, 0.0, gt::num_num, ori),
         (Dyadic::Min, _) => reduce_pervasive(a, 0.0, min::num_num, ori),
         (Dyadic::Max, _) => reduce_pervasive(a, 1.0, max::num_num, ori),
+        (dy, _) => return Err(rt.error(format!("{dy:?} reduction is not implemented"))),
     };
     rt.push(res);
     Ok(())

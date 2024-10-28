@@ -47,6 +47,8 @@ prim!(Dyadic,
     (Min, "min", 'N'),
     /// Get the maximum of two arrays
     (Max, "max", 'X'),
+    /// Chunk an array
+    (Chunk, "chunk", 'K'),
 );
 prim!(Mod,
     /// Call a function considering an array's form vertically rather than horizontally

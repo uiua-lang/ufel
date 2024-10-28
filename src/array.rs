@@ -33,14 +33,14 @@ impl<T: Clone> Array<T> {
             data,
             _priv: (),
         };
-        arr.validate_shape();
+        arr.validate_form();
         arr
     }
     pub fn scalar(elem: T) -> Self {
         Self::new(Form::scalar(), CowSlice::from_elem(elem, 1))
     }
     #[track_caller]
-    pub fn validate_shape(&self) {
+    pub fn validate_form(&self) {
         self.form.validate();
         #[cfg(debug_assertions)]
         assert_eq!(
@@ -70,7 +70,7 @@ impl<T: Clone> Array<T> {
             }
             arr.form.fix(rt.ori());
             arr.form[0][0] = new_len;
-            arr.validate_shape();
+            arr.validate_form();
             Ok(arr)
         } else {
             todo!("non-normal array creation")

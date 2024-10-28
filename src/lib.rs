@@ -2,6 +2,7 @@ mod array;
 pub mod ast;
 mod compile;
 mod cowslice;
+mod dyadic;
 mod error;
 mod form;
 mod lex;

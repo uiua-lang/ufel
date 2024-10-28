@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     fmt,
-    ops::{Index, IndexMut, Not},
+    ops::{Deref, Index, IndexMut, Not},
 };
 
 use tinyvec::{tiny_vec, TinyVec};
@@ -57,15 +57,16 @@ impl Form {
             Ori::Vert => self.hori_axis_rows().skip(1).flatten().product(),
         }
     }
-    pub fn shape(&self, ori: Ori) -> Cow<[usize]> {
+    pub fn shape(&self, ori: Ori) -> Shape {
         match ori {
-            Ori::Hori => self.hori_axis_rows().next().unwrap_or(&[]).into(),
-            Ori::Vert => self
-                .hori_axis_rows()
-                .flat_map(|r| r.first())
-                .copied()
-                .collect::<Vec<_>>()
-                .into(),
+            Ori::Hori => Shape(self.hori_axis_rows().next().unwrap_or(&[]).into()),
+            Ori::Vert => Shape(
+                self.hori_axis_rows()
+                    .flat_map(|r| r.first())
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .into(),
+            ),
         }
     }
     pub fn is_scalar(&self) -> bool {
@@ -87,14 +88,14 @@ impl Form {
         self.hori
     }
     /// The total number of axes
-    pub fn axes_rank(&self) -> usize {
+    pub fn dims_rank(&self) -> usize {
         self.vert * self.hori
     }
     pub fn dims(&self) -> &[usize] {
         &self.dims
     }
     pub fn is_normal(&self) -> bool {
-        self.vert <= 1
+        self.vert <= 1 || self.hori == 0
     }
     pub fn as_normal(&self) -> Option<&[usize]> {
         if self.is_scalar() {
@@ -207,7 +208,7 @@ impl Form {
     pub(crate) fn validate(&self) {
         #[cfg(debug_assertions)]
         assert_eq!(
-            self.axes_rank(),
+            self.dims_rank(),
             self.dims.len(),
             "Form is {}x{} but has {} elements",
             self.vert,
@@ -307,11 +308,43 @@ impl fmt::Debug for Form {
     }
 }
 
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct Shape<'a>(Cow<'a, [usize]>);
+
+impl<'a> fmt::Debug for Shape<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[")?;
+        for (i, dim) in self.0.iter().enumerate() {
+            if i > 0 {
+                write!(f, "×")?;
+            }
+            write!(f, "{dim}")?;
+        }
+        write!(f, "]")
+    }
+}
+
+impl<'a> Deref for Shape<'a> {
+    type Target = [usize];
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Ori {
     #[default]
     Hori,
     Vert,
+}
+
+impl Ori {
+    pub fn str(&self) -> &'static str {
+        match self {
+            Ori::Hori => "horizontal",
+            Ori::Vert => "vertical",
+        }
+    }
 }
 
 impl Not for Ori {

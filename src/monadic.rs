@@ -30,7 +30,7 @@ impl<T: Clone> Array<T> {
         })
     }
     pub fn transpose(self, rt: &Ufel) -> UfelResult<Self> {
-        let mut axes: Vec<usize> = (0..self.form.axes_rank()).collect();
+        let mut axes: Vec<usize> = (0..self.form.dims_rank()).collect();
         let stride = self.form.hori_rank();
         match rt.ori() {
             Ori::Hori => {
@@ -42,7 +42,7 @@ impl<T: Clone> Array<T> {
         };
         self.move_axes(&axes, rt)
     }
-    fn move_axes(self, indices: &[usize], rt: &Ufel) -> UfelResult<Self> {
+    pub(crate) fn move_axes(self, indices: &[usize], rt: &Ufel) -> UfelResult<Self> {
         fn derive_orient_data(
             indices: &[usize],
             axes: &[usize],
@@ -106,14 +106,14 @@ impl<T: Clone> Array<T> {
                 Form::new(self.form.vert_rank(), self.form.hori_rank(), new_dims),
                 CowSlice::new(),
             ));
-        } else if trailing_dims == self.form.axes_rank() {
+        } else if trailing_dims == self.form.dims_rank() {
             return Ok(self.clone());
         }
 
         let mut data = self.data.clone();
         data.truncate(new_dims_elems);
         let considered_orig_dims =
-            FormDims::from(&self.form.dims()[..self.form.axes_rank() - trailing_dims]);
+            FormDims::from(&self.form.dims()[..self.form.dims_rank() - trailing_dims]);
         let considered_new_dims = FormDims::from(&new_dims[..new_dims.len() - trailing_dims]);
         let trailing_row_len: usize = self.form.dims()[considered_orig_dims.len()..]
             .iter()
