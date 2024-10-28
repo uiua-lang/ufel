@@ -1,6 +1,54 @@
-use ecow::EcoVec;
+use ecow::{eco_vec, EcoVec};
 
-use crate::{cowslice::CowSlice, Array, Form, FormDims, Ori, Ufel, UfelResult};
+use crate::{cowslice::CowSlice, Array, Form, FormDims, Monadic, Ori, Ufel, UfelResult};
+
+impl Array {
+    pub fn range(self, rt: &Ufel) -> UfelResult<Self> {
+        if !self.form.is_normal() {
+            return Err(rt.error(format!(
+                "{:?} array must be normal, but its form is {:?}",
+                Monadic::Range,
+                self.form
+            )));
+        }
+        let shape = self.form.shape(rt.ori());
+        if let Some(d) = self.data.iter().find(|&d| d.fract() != 0.0 || *d < 0.0) {
+            return Err(rt.error(format!(
+                "{:?} array must be naturals, but one element is {d}",
+                Monadic::Range
+            )));
+        }
+        let max: f64 = self.data.iter().product();
+        if max > 1e8 {
+            return Err(rt.error(format!("Array of {} elements would be too large", max)));
+        }
+        Ok(match *shape.as_ref() {
+            [] => (0..max as usize).map(|i| i as f64).collect(),
+            [n] => {
+                let dims: Vec<usize> = self.data.iter().map(|d| *d as usize).collect();
+                let form = Form::from_iter(dims.iter().copied().chain([n]));
+                let mut data = eco_vec![0.0; form.elems()];
+                let slice = data.make_mut();
+                let mut index = vec![0; n];
+                for i in 0..max as usize {
+                    flat_to_dims(&dims, i, &mut index);
+                    for (x, &y) in slice[i * n..(i + 1) * n].iter_mut().zip(&index) {
+                        *x = y as f64;
+                    }
+                }
+                Array::new(form, data.into())
+            }
+            [_n, _m] => return Err(rt.error("Full form range is not yet implemented")),
+            _ => {
+                return Err(rt.error(format!(
+                    "{:?} array must be at most rank 2, but its form is {:?}",
+                    Monadic::Range,
+                    self.form
+                )))
+            }
+        })
+    }
+}
 
 impl<T: Clone> Array<T> {
     pub fn first(self, rt: &Ufel) -> UfelResult<Self> {

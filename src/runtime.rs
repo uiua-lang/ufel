@@ -79,6 +79,7 @@ impl Ufel {
             Monadic::Len => a.form.row_count(self.ori).into(),
             Monadic::Shape => a.form.shape(self.ori).as_ref().into(),
             Monadic::Form => a.form.into(),
+            Monadic::Range => a.range(self)?,
             Monadic::First => a.first(self)?,
             Monadic::Transpose => a.transpose(self)?,
         };

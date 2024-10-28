@@ -278,6 +278,23 @@ impl<const M: usize, const N: usize> From<[[usize; N]; M]> for Form {
     }
 }
 
+impl From<FormDims> for Form {
+    fn from(dims: FormDims) -> Self {
+        Self {
+            vert: 1,
+            hori: dims.len(),
+            dims,
+        }
+    }
+}
+
+impl FromIterator<usize> for Form {
+    fn from_iter<T: IntoIterator<Item = usize>>(iter: T) -> Self {
+        let dims: FormDims = iter.into_iter().collect();
+        Self::from(dims)
+    }
+}
+
 impl fmt::Debug for Form {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;

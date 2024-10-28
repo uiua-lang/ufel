@@ -21,6 +21,8 @@ prim!(Monadic,
     (Shape, "shape", 'h'),
     /// Get the form of an array
     (Form, "form", 'f'),
+    /// Generate a range of numbers or indices for a form
+    (Range, "range", 'i'),
     /// Get the first row of an array
     (First, "first", 'a'),
     /// Rotate the form of an array
