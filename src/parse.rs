@@ -61,6 +61,7 @@ impl<'a> Parser<'a> {
             .map(|sp| sp.span)
     }
     fn items(&mut self) -> Vec<Item> {
+        self.newline();
         let mut items = Vec::new();
         while let Some(item) = self.item() {
             items.push(item);

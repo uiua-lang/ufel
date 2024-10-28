@@ -17,20 +17,32 @@ impl Array {
             s.push(']');
             return s;
         }
-        let max_width = elem_strs.iter().map(|s| s.len()).max().unwrap_or(0);
         let last_dim = *self.form.dims().last().unwrap();
-        let width = max_width * last_dim + last_dim.saturating_sub(1) + 5;
+        let mut max_widths = vec![0; last_dim];
+        for (i, s) in elem_strs.iter().enumerate() {
+            max_widths[i % last_dim] = max_widths[i % last_dim].max(s.len());
+        }
+        let mut width = max_widths.iter().sum::<usize>() + last_dim.saturating_sub(1) + 5;
+        let mut overflow = false;
+        if let Some((w, _)) = terminal_size::terminal_size() {
+            let w = w.0 as usize;
+            overflow = w < width;
+            width = width.min(w);
+        }
         let mut height = 1;
+        let mut j = 0;
         for (i, row) in self.form.hori_axis_rows().rev().enumerate() {
             let mut dims = row.iter().rev();
             if i == 0 {
                 dims.next();
             }
-            for (j, &dim) in dims.enumerate() {
+            for &dim in dims {
                 height *= dim;
-                height += dim.saturating_sub(1) * ((i, j) != (0, 0)) as usize;
+                height += dim.saturating_sub(1) * (j != 0) as usize;
+                j += 1;
             }
         }
+        height = height.max(self.form.dims_rank() - 1);
         height += 2;
         let mut grid = vec![' '; width * height];
         let mut curr = vec![0; self.form.dims_rank() - 1];
@@ -39,15 +51,24 @@ impl Array {
         rows.next();
         while let Some(row) = rows.next() {
             let mut j = 2;
-            for (k, s) in strs.by_ref().take(last_dim).enumerate() {
+            for (k, (s, w)) in strs.by_ref().take(last_dim).zip(&max_widths).enumerate() {
                 if k > 0 {
                     j += 1;
                 }
-                j += max_width - s.len();
+                j += *w - s.len();
+                if j >= width - 3 {
+                    break;
+                }
                 for c in s.chars() {
                     row[j] = c;
                     j += 1;
+                    if j >= width - 3 {
+                        break;
+                    }
                 }
+            }
+            if overflow {
+                row[width - 3] = '…';
             }
             for (curr, &dim) in curr.iter_mut().zip(self.form.dims()).rev() {
                 *curr += 1;
@@ -64,7 +85,7 @@ impl Array {
         grid[0] = '╭';
         grid[1] = '─';
         for i in 1..self.form.dims_rank() {
-            grid[i * width] = '╷'
+            grid[i * width] = '╷';
         }
         grid[width * height - 2] = '╯';
         grid.pop();
