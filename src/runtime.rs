@@ -40,7 +40,7 @@ impl Ufel {
                 rt.exec(*inner)?;
                 rt.require_height(len)?;
                 let start = rt.stack.len() - len;
-                let rows: Vec<Array> = rt.stack.drain(start..).rev().collect();
+                let rows = rt.stack.split_off(start);
                 let arr = Array::from_row_arrays(rows, rt)?;
                 rt.push(arr);
                 Ok(())
@@ -72,9 +72,9 @@ impl Ufel {
             Monadic::Not => a.not(),
             Monadic::Abs => a.abs(),
             Monadic::Sign => a.sign(),
-            Monadic::Len => todo!(),
-            Monadic::Shape => todo!(),
-            Monadic::Form => todo!(),
+            Monadic::Len => a.form.row_count().into(),
+            Monadic::Shape => a.form.row_shape().into(),
+            Monadic::Form => a.form.into(),
         };
         self.push(res);
         Ok(())
@@ -99,10 +99,51 @@ impl Ufel {
     }
     fn mon_mod(&mut self, prim: Mod, f: SigNode) -> UfelResult {
         match prim {
+            Mod::Slf => {
+                let a = self.pop(1)?;
+                self.push(a.clone());
+                self.push(a);
+                self.exec(f.node)?;
+            }
+            Mod::Flip => {
+                let a = self.pop(1)?;
+                let b = self.pop(2)?;
+                self.push(a);
+                self.push(b);
+                self.exec(f.node)?;
+            }
             Mod::Dip => {
                 let a = self.pop(1);
                 self.exec(f.node)?;
                 self.stack.push(a?);
+            }
+            Mod::On => {
+                let a = self.pop(1)?;
+                self.push(a.clone());
+                self.exec(f.node)?;
+                self.push(a);
+            }
+            Mod::By => {
+                self.require_height(f.sig.args)?;
+                fn rec(rt: &mut Ufel, n: usize) {
+                    if n == 0 {
+                        let a = rt.pop(1).unwrap();
+                        rt.push(a.clone());
+                        rt.push(a);
+                    } else {
+                        let a = rt.pop(1).unwrap();
+                        rec(rt, n - 1);
+                        rt.push(a);
+                    }
+                }
+                rec(self, f.sig.args);
+                self.exec(f.node)?;
+            }
+            Mod::Both => {
+                let args = self.take_n(f.sig.args)?;
+                self.exec(f.node.clone())?;
+                self.stack.extend(args.into_iter().rev());
+                self.exec(f.node)?;
             }
             Mod::Reduce => todo!(),
             Mod::Scan => todo!(),
@@ -113,6 +154,12 @@ impl Ufel {
         match prim {
             DyMod::Fork => {
                 let f_args = self.copy_n(f.sig.args)?;
+                self.exec(g.node)?;
+                self.stack.extend(f_args.into_iter().rev());
+                self.exec(f.node)?;
+            }
+            DyMod::Bracket => {
+                let f_args = self.take_n(f.sig.args)?;
                 self.exec(g.node)?;
                 self.stack.extend(f_args.into_iter().rev());
                 self.exec(f.node)?;
@@ -131,6 +178,10 @@ impl Ufel {
     fn copy_n(&self, n: usize) -> UfelResult<Vec<Array>> {
         self.require_height(n)?;
         Ok(self.stack[self.stack.len() - n..].to_vec())
+    }
+    fn take_n(&mut self, n: usize) -> UfelResult<Vec<Array>> {
+        self.require_height(n)?;
+        Ok(self.stack.split_off(self.stack.len() - n))
     }
     fn require_height(&self, n: usize) -> UfelResult {
         if self.stack.len() < n {

@@ -32,6 +32,18 @@ impl<T: Clone> Array<T> {
             data: CowSlice::from_elem(data, 1),
         }
     }
+    #[track_caller]
+    pub fn validate_shape(&self) {
+        self.form.validate();
+        #[cfg(debug_assertions)]
+        assert_eq!(
+            self.form.elems(),
+            self.data.len(),
+            "Form is {:?} but data has {} elements",
+            self.form,
+            self.data.len()
+        );
+    }
     pub fn from_row_arrays(rows: impl IntoIterator<Item = Self>, rt: &Ufel) -> UfelResult<Self> {
         let mut iter = rows.into_iter();
         let Some(mut arr) = iter.next() else {
@@ -51,6 +63,7 @@ impl<T: Clone> Array<T> {
             }
             arr.form.fix();
             arr.form[0][0] = new_len;
+            arr.validate_shape();
             Ok(arr)
         } else {
             todo!("non-normal array creation")
@@ -148,9 +161,23 @@ impl<T: Clone> FromIterator<T> for Array<T> {
     }
 }
 
-impl From<usize> for Array<f64> {
+impl From<usize> for Array {
     fn from(n: usize) -> Self {
         Self::scalar(n as f64)
+    }
+}
+
+impl From<&[usize]> for Array {
+    fn from(value: &[usize]) -> Self {
+        value.iter().map(|&n| n as f64).collect()
+    }
+}
+
+impl From<Form> for Array {
+    fn from(form: Form) -> Self {
+        let mut arr: Array = form.dims().into();
+        arr.form = Form::from([form.row_rank(), form.col_rank()]);
+        arr
     }
 }
 

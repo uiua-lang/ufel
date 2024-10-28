@@ -45,6 +45,12 @@ impl Form {
     pub fn col_len(&self) -> usize {
         self.axis_rows().skip(1).flatten().product()
     }
+    pub fn row_shape(&self) -> &[usize] {
+        self.axis_rows().next().unwrap_or(&[])
+    }
+    pub fn col_shape(&self) -> Vec<usize> {
+        self.axis_rows().flat_map(|r| r.first()).copied().collect()
+    }
     pub fn is_scalar(&self) -> bool {
         self.rows == 0 && self.cols == 0
     }
@@ -57,8 +63,12 @@ impl Form {
     pub fn col_rank(&self) -> usize {
         self.cols
     }
+    /// The total number of axes
     pub fn axis_rank(&self) -> usize {
         self.rows * self.cols
+    }
+    pub fn dims(&self) -> &[usize] {
+        &self.dims
     }
     pub fn is_normal(&self) -> bool {
         self.rows <= 1
@@ -131,10 +141,11 @@ impl Form {
         self.rows = self.rows.max(1);
         self.validate();
     }
+    #[track_caller]
     pub(crate) fn validate(&self) {
         #[cfg(debug_assertions)]
         assert_eq!(
-            self.elems(),
+            self.axis_rank(),
             self.dims.len(),
             "Form is {}x{} but has {} elements",
             self.rows,
@@ -207,18 +218,27 @@ impl<const M: usize, const N: usize> From<[[usize; N]; M]> for Form {
 impl fmt::Debug for Form {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
-        for i in 0..self.rows {
-            if i > 0 {
-                write!(f, " ")?;
+        if let Some(dims) = self.as_normal() {
+            for (i, dim) in dims.iter().enumerate() {
+                if i > 0 {
+                    write!(f, " ")?;
+                }
+                write!(f, "{}", dim)?;
             }
-            if self.cols == 0 {
-                write!(f, "_")?;
-            }
-            for j in 0..self.cols {
-                if j > 0 || self.cols == 1 {
+        } else {
+            for i in 0..self.rows {
+                if i > 0 {
+                    write!(f, " ")?;
+                }
+                if self.cols == 0 {
                     write!(f, "_")?;
                 }
-                write!(f, "{}", self[i][j])?;
+                for j in 0..self.cols {
+                    if j > 0 || self.cols == 1 {
+                        write!(f, "_")?;
+                    }
+                    write!(f, "{}", self[i][j])?;
+                }
             }
         }
         write!(f, "]")

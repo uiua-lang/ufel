@@ -11,6 +11,6 @@ Ufel explores the possibility of multi-dimensional shapes.
 
 Like Uiua, Ufel is a stack-based array language.
 
-Unlike Uiua, Ufel is typed with only ASCII characters.
+Unlike Uiua, Ufel is typed with only ASCII characters. It also runs left-to-right, rather than right-to-left.
 
 See [primitives.md](primitives.md) for a list of primitives.

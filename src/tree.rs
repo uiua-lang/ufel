@@ -304,10 +304,26 @@ impl Node {
                     Node::Mod(m, f, _) => match m {
                         Mod::Dip => self.handle_args_outputs(f.sig.args + 1, f.sig.outputs + 1),
                         Mod::Reduce | Mod::Scan => self.handle_args_outputs(1, 1),
+                        Mod::Slf => {
+                            self.handle_args_outputs(1, 2);
+                            self.handle_args_outputs(f.sig.args, f.sig.outputs)
+                        }
+                        Mod::Flip => {
+                            self.handle_args_outputs(2, 2);
+                            self.handle_args_outputs(f.sig.args, f.sig.outputs)
+                        }
+                        Mod::On | Mod::By => {
+                            self.handle_args_outputs(f.sig.args.max(1), f.sig.outputs + 1)
+                        }
+                        Mod::Both => self.handle_args_outputs(f.sig.args * 2, f.sig.outputs * 2),
                     },
                     Node::DyMod(m, f, g, _) => match m {
                         DyMod::Fork => self.handle_args_outputs(
                             f.sig.args.max(g.sig.args),
+                            f.sig.outputs + g.sig.outputs,
+                        ),
+                        DyMod::Bracket => self.handle_args_outputs(
+                            f.sig.args + g.sig.args,
                             f.sig.outputs + g.sig.outputs,
                         ),
                     },

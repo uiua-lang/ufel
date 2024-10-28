@@ -45,8 +45,18 @@ prim!(Dyadic,
     (Max, "max", 'X'),
 );
 prim!(Mod,
+    /// Call a function with two copies of the same value
+    (Slf, "self", '\''),
+    /// Call a function with its arguments reversed
+    (Flip, "flip", '"'),
     /// Temporarily pop a value from the stack
     (Dip, "dip", ','),
+    /// Keep the first argument of a function on top of the stack
+    (On, "on", 'o'),
+    /// Keep the last argument of a function below its outputs on the stack
+    (By, "by", 'q'),
+    /// Call the same function on two sets of arguments
+    (Both, "both", '&'),
     /// Reduce with a function
     (Reduce, "reduce", 'r'),
     /// Scan with a function
@@ -54,7 +64,9 @@ prim!(Mod,
 );
 prim!(DyMod,
     /// Call two functions on the same sets of values
-    (Fork, "fork", 'F'),
+    (Fork, "fork", '^'),
+    /// Call two functions on different sets of values
+    (Bracket, "bracket", '%'),
 );
 
 pub trait PrimKind: Sized + Sequence {

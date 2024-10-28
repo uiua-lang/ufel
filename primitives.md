@@ -30,7 +30,12 @@
 
 | Name | Glyph | Description |
 | ---- | ----- | ----------- |
+| `self` | `'` |  Call a function with two copies of the same value |
+| `flip` | `"` |  Call a function with its arguments reversed |
 | `dip` | `,` |  Temporarily pop a value from the stack |
+| `on` | `o` |  Keep the first argument of a function on top of the stack |
+| `by` | `q` |  Keep the last argument of a function below its outputs on the stack |
+| `both` | `&` |  Call the same function on two sets of arguments |
 | `reduce` | `r` |  Reduce with a function |
 | `scan` | `s` |  Scan with a function |
 
@@ -38,5 +43,6 @@
 
 | Name | Glyph | Description |
 | ---- | ----- | ----------- |
-| `fork` | `F` |  Call two functions on the same sets of values |
+| `fork` | `^` |  Call two functions on the same sets of values |
+| `bracket` | `%` |  Call two functions on different sets of values |
 
