@@ -5,6 +5,7 @@ mod cowslice;
 mod dyadic;
 mod error;
 mod form;
+mod gridfmt;
 mod lex;
 mod monadic;
 mod parse;

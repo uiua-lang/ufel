@@ -241,7 +241,7 @@ impl<'a> Parser<'a> {
     }
     fn number(&mut self) -> Option<Sp<f64>> {
         self.next_token_map(|t, s| match t {
-            Token::Number => s.parse().ok(),
+            Token::Number => s.replace('`', "-").parse().ok(),
             _ => None,
         })
     }

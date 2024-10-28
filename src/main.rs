@@ -87,7 +87,7 @@ fn run(src: InputSrc, text: &str) {
     let mut rt = Ufel::new();
     let res = rt.run(src, text);
     for val in rt.take_stack() {
-        println!("{val}");
+        println!("{}", val.show());
     }
     if let Err(e) = res {
         eprintln!("{e}");

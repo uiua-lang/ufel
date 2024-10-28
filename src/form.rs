@@ -138,7 +138,7 @@ impl Form {
         form.validate();
         form
     }
-    pub fn hori_axis_rows(&self) -> impl Iterator<Item = &[usize]> {
+    pub fn hori_axis_rows(&self) -> impl DoubleEndedIterator<Item = &[usize]> {
         self.dims.chunks_exact(self.hori.max(1))
     }
     pub fn is_prefix_of(&self, other: &Self) -> bool {
