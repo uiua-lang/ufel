@@ -12,7 +12,7 @@ prim!(Monadic,
     /// Not an array
     (Not, "not", 'n'),
     /// Get the absolute value of an array
-    (Abs, "abs", 'a'),
+    (Abs, "abs", 'b'),
     /// Get the sign of an array
     (Sign, "sign", 'g'),
     /// Get the length of an array
@@ -21,6 +21,10 @@ prim!(Monadic,
     (Shape, "shape", 'h'),
     /// Get the form of an array
     (Form, "form", 'f'),
+    /// Get the first row of an array
+    (First, "first", 'a'),
+    /// Rotate the form of an array
+    (Transpose, "transpose", 't'),
 );
 prim!(Dyadic,
     /// Add two arrays
@@ -45,6 +49,11 @@ prim!(Dyadic,
     (Max, "max", 'X'),
 );
 prim!(Mod,
+    /// Call a function considering an array's form vertically rather than horizontally
+    ///
+    /// This is the main thing that makes Ufel novel.
+    /// Nested called flip back and forth between the two orientations.
+    (Turn, "turn", '~'),
     /// Call a function with two copies of the same value
     (Slf, "self", '\''),
     /// Call a function with its arguments reversed
@@ -60,7 +69,7 @@ prim!(Mod,
     /// Reduce with a function
     (Reduce, "reduce", 'r'),
     /// Scan with a function
-    (Scan, "scan", 's'),
+    (Scan, "scan", 'c'),
 );
 prim!(DyMod,
     /// Call two functions on the same sets of values
@@ -78,6 +87,18 @@ pub trait PrimKind: Sized + Sequence {
     fn full_docs(&self) -> &'static str;
     fn all() -> All<Self> {
         all::<Self>()
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn glyph_collision() {
+    for a in Primitive::all() {
+        for b in Primitive::all() {
+            if a != b && a.glyph() == b.glyph() {
+                panic!("{a:?} and {b:?} have the same glyph");
+            }
+        }
     }
 }
 
@@ -211,7 +232,11 @@ macro_rules! prim {
     ) => {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, Sequence)]
         pub enum $prim {
-            $($variant,)*
+            $(
+                #[doc = $doc]
+                $(#[doc = $doc2])*
+                $variant,
+            )*
         }
 
         impl fmt::Debug for $prim {

@@ -1,119 +1,149 @@
 use std::{
+    borrow::Cow,
     fmt,
-    ops::{Index, IndexMut},
+    ops::{Index, IndexMut, Not},
 };
 
 use tinyvec::{tiny_vec, TinyVec};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Form {
-    rows: usize,
-    cols: usize,
-    dims: TinyVec<[usize; 3]>,
+    vert: usize,
+    hori: usize,
+    dims: FormDims,
 }
 
+pub type FormDims = TinyVec<[usize; 3]>;
+
 impl Form {
+    pub fn new(vert: usize, hori: usize, dims: FormDims) -> Self {
+        let form = Self { vert, hori, dims };
+        form.validate();
+        form
+    }
     pub fn scalar() -> Self {
         Self {
-            rows: 0,
-            cols: 0,
+            vert: 0,
+            hori: 0,
             dims: TinyVec::new(),
         }
     }
     pub fn empty_list() -> Self {
         Self {
-            rows: 1,
-            cols: 1,
+            vert: 1,
+            hori: 1,
             dims: tiny_vec![0],
         }
     }
     pub fn elems(&self) -> usize {
         self.dims.iter().product()
     }
-    pub fn row_count(&self) -> usize {
-        self.axis_rows().filter_map(|r| r.first()).product()
+    pub fn row_count(&self, ori: Ori) -> usize {
+        match ori {
+            Ori::Hori => self.hori_axis_rows().filter_map(|r| r.first()).product(),
+            Ori::Vert => self
+                .hori_axis_rows()
+                .next()
+                .map(|r| r.iter().product())
+                .unwrap_or(1),
+        }
     }
-    pub fn col_count(&self) -> usize {
-        self.axis_rows()
-            .next()
-            .map(|r| r.iter().product())
-            .unwrap_or(1)
+    pub fn row_len(&self, ori: Ori) -> usize {
+        match ori {
+            Ori::Hori => self
+                .hori_axis_rows()
+                .flat_map(|r| r.iter().skip(1))
+                .product(),
+            Ori::Vert => self.hori_axis_rows().skip(1).flatten().product(),
+        }
     }
-    pub fn row_len(&self) -> usize {
-        self.axis_rows().flat_map(|r| r.iter().skip(1)).product()
-    }
-    pub fn col_len(&self) -> usize {
-        self.axis_rows().skip(1).flatten().product()
-    }
-    pub fn row_shape(&self) -> &[usize] {
-        self.axis_rows().next().unwrap_or(&[])
-    }
-    pub fn col_shape(&self) -> Vec<usize> {
-        self.axis_rows().flat_map(|r| r.first()).copied().collect()
+    pub fn shape(&self, ori: Ori) -> Cow<[usize]> {
+        match ori {
+            Ori::Hori => self.hori_axis_rows().next().unwrap_or(&[]).into(),
+            Ori::Vert => self
+                .hori_axis_rows()
+                .flat_map(|r| r.first())
+                .copied()
+                .collect::<Vec<_>>()
+                .into(),
+        }
     }
     pub fn is_scalar(&self) -> bool {
-        self.rows == 0 && self.cols == 0
+        self.vert == 0 || self.hori == 0
     }
     pub fn is_list(&self) -> bool {
         self.normal_rank() == Some(1)
     }
-    pub fn row_rank(&self) -> usize {
-        self.rows
+    pub fn rank(&self, ori: Ori) -> usize {
+        match ori {
+            Ori::Hori => self.hori_rank(),
+            Ori::Vert => self.vert_rank(),
+        }
     }
-    pub fn col_rank(&self) -> usize {
-        self.cols
+    pub fn vert_rank(&self) -> usize {
+        self.vert
+    }
+    pub fn hori_rank(&self) -> usize {
+        self.hori
     }
     /// The total number of axes
-    pub fn axis_rank(&self) -> usize {
-        self.rows * self.cols
+    pub fn axes_rank(&self) -> usize {
+        self.vert * self.hori
     }
     pub fn dims(&self) -> &[usize] {
         &self.dims
     }
     pub fn is_normal(&self) -> bool {
-        self.rows <= 1
+        self.vert <= 1
     }
     pub fn as_normal(&self) -> Option<&[usize]> {
-        self.axis_rows().next().filter(|_| self.is_normal())
+        if self.is_scalar() {
+            Some(&[])
+        } else {
+            self.hori_axis_rows().next().filter(|_| self.is_normal())
+        }
     }
     pub fn normal_rank(&self) -> Option<usize> {
-        self.is_normal().then(|| self.col_rank())
+        self.is_normal().then(|| self.hori_rank())
     }
-    pub fn row(&self) -> Self {
-        let rows = self.rows;
-        let cols = self.cols.saturating_sub(1);
-        let mut dims = TinyVec::with_capacity(rows * cols);
-        for i in 0..rows {
-            for j in 1..cols {
-                dims.push(self.dims[i * self.cols + j]);
+    pub fn row(&self, ori: Ori) -> Self {
+        let (vert, hori, dims) = match ori {
+            Ori::Hori => {
+                let vert = self.vert;
+                let hori = self.hori.saturating_sub(1);
+                let mut dims = TinyVec::with_capacity(vert * hori);
+                for i in 0..vert {
+                    for j in 0..hori {
+                        dims.push(self.dims[i * self.hori + (j + 1)]);
+                    }
+                }
+                (vert, hori, dims)
             }
-        }
-        let form = Self { rows, cols, dims };
+            Ori::Vert => {
+                let vert = self.vert.saturating_sub(1);
+                let hori = self.hori;
+                let mut dims = TinyVec::with_capacity(vert * hori);
+                for i in 0..vert {
+                    for j in 0..hori {
+                        dims.push(self.dims[(i + 1) * self.hori + j]);
+                    }
+                }
+                (vert, hori, dims)
+            }
+        };
+        let form = Self { vert, hori, dims };
         form.validate();
         form
     }
-    pub fn col(&self) -> Self {
-        let rows = self.rows.saturating_sub(1);
-        let cols = self.cols;
-        let mut dims = TinyVec::with_capacity(rows * cols);
-        for i in 1..rows {
-            for j in 0..cols {
-                dims.push(self.dims[i * self.cols + j]);
-            }
-        }
-        let form = Self { rows, cols, dims };
-        form.validate();
-        form
-    }
-    pub fn axis_rows(&self) -> impl Iterator<Item = &[usize]> {
-        self.dims.chunks_exact(self.cols.max(1))
+    pub fn hori_axis_rows(&self) -> impl Iterator<Item = &[usize]> {
+        self.dims.chunks_exact(self.hori.max(1))
     }
     pub fn is_prefix_of(&self, other: &Self) -> bool {
-        if !(self.rows <= other.rows && self.cols <= other.cols) {
+        if !(self.vert <= other.vert && self.hori <= other.hori) {
             return false;
         }
-        for i in 0..self.rows {
-            for j in 0..self.cols {
+        for i in 0..self.vert {
+            for j in 0..self.hori {
                 if self[i][j] != other[i][j] {
                     return false;
                 }
@@ -124,32 +154,64 @@ impl Form {
     pub fn prefixes_match(&self, other: &Self) -> bool {
         self.is_prefix_of(other) || other.is_prefix_of(self)
     }
-    pub fn fix(&mut self) {
-        if self.is_normal() {
-            self.dims.insert(0, 1);
+    pub fn fix(&mut self, ori: Ori) {
+        let new_vert = (self.vert + (ori == Ori::Vert) as usize).max(1);
+        let new_hori = (self.hori + (ori == Ori::Hori) as usize).max(1);
+        let mut dims = TinyVec::with_capacity(new_vert * new_hori);
+        if self.is_scalar() {
+            dims.push(1);
         } else {
-            let mut dims = TinyVec::with_capacity(self.rows * (self.cols + 1));
-            for i in 0..self.rows {
-                dims.push(1);
-                for j in 0..self.cols {
-                    dims.push(self[i][j]);
+            match ori {
+                Ori::Hori => {
+                    for i in 0..self.vert {
+                        dims.push(1);
+                        for j in 0..self.hori {
+                            dims.push(self[i][j]);
+                        }
+                    }
+                }
+                Ori::Vert => {
+                    for i in 0..self.vert {
+                        for _ in 0..self.hori {
+                            dims.push(1);
+                        }
+                        for j in 0..self.hori {
+                            dims.push(self[i][j]);
+                        }
+                    }
                 }
             }
-            self.dims = dims;
         }
-        self.cols += 1;
-        self.rows = self.rows.max(1);
+        self.dims = dims;
+        self.vert = new_vert;
+        self.hori = new_hori;
         self.validate();
+    }
+    pub fn deform(&mut self, ori: Ori) {
+        match ori {
+            Ori::Hori => {
+                self.hori *= self.vert;
+                self.vert = 1;
+            }
+            Ori::Vert => {
+                self.vert *= self.hori;
+                self.hori = 1;
+            }
+        }
+        self.validate();
+    }
+    pub fn rerank(&mut self, _rank: usize) {
+        todo!()
     }
     #[track_caller]
     pub(crate) fn validate(&self) {
         #[cfg(debug_assertions)]
         assert_eq!(
-            self.axis_rank(),
+            self.axes_rank(),
             self.dims.len(),
             "Form is {}x{} but has {} elements",
-            self.rows,
-            self.cols,
+            self.vert,
+            self.hori,
             self.dims.len()
         );
     }
@@ -160,22 +222,22 @@ impl Index<usize> for Form {
     #[track_caller]
     fn index(&self, index: usize) -> &Self::Output {
         assert!(
-            index < self.rows,
+            index < self.vert,
             "Index {index} out of bounds of {} form rows",
-            self.rows
+            self.vert
         );
-        &self.dims[index * self.cols..(index + 1) * self.cols]
+        &self.dims[index * self.hori..(index + 1) * self.hori]
     }
 }
 
 impl IndexMut<usize> for Form {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         assert!(
-            index < self.rows,
+            index < self.vert,
             "Index {index} out of bounds of {} form rows",
-            self.rows
+            self.vert
         );
-        &mut self.dims[index * self.cols..(index + 1) * self.cols]
+        &mut self.dims[index * self.hori..(index + 1) * self.hori]
     }
 }
 
@@ -188,8 +250,8 @@ impl From<usize> for Form {
 impl<const N: usize> From<[usize; N]> for Form {
     fn from(dims: [usize; N]) -> Self {
         Self {
-            rows: 1,
-            cols: N,
+            vert: 1,
+            hori: N,
             dims: dims.into_iter().collect(),
         }
     }
@@ -198,8 +260,8 @@ impl<const N: usize> From<[usize; N]> for Form {
 impl From<&[usize]> for Form {
     fn from(dims: &[usize]) -> Self {
         Self {
-            rows: 1,
-            cols: dims.len(),
+            vert: 1,
+            hori: dims.len(),
             dims: dims.iter().copied().collect(),
         }
     }
@@ -208,8 +270,8 @@ impl From<&[usize]> for Form {
 impl<const M: usize, const N: usize> From<[[usize; N]; M]> for Form {
     fn from(dims: [[usize; N]; M]) -> Self {
         Self {
-            rows: M,
-            cols: N,
+            vert: M,
+            hori: N,
             dims: dims.into_iter().flatten().collect(),
         }
     }
@@ -221,26 +283,43 @@ impl fmt::Debug for Form {
         if let Some(dims) = self.as_normal() {
             for (i, dim) in dims.iter().enumerate() {
                 if i > 0 {
-                    write!(f, " ")?;
+                    write!(f, "×")?;
                 }
                 write!(f, "{}", dim)?;
             }
         } else {
-            for i in 0..self.rows {
+            for i in 0..self.vert {
                 if i > 0 {
                     write!(f, " ")?;
                 }
-                if self.cols == 0 {
-                    write!(f, "_")?;
+                if self.hori == 0 {
+                    write!(f, "×")?;
                 }
-                for j in 0..self.cols {
-                    if j > 0 || self.cols == 1 {
-                        write!(f, "_")?;
+                for j in 0..self.hori {
+                    if j > 0 || self.hori == 1 {
+                        write!(f, "×")?;
                     }
                     write!(f, "{}", self[i][j])?;
                 }
             }
         }
         write!(f, "]")
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Ori {
+    #[default]
+    Hori,
+    Vert,
+}
+
+impl Not for Ori {
+    type Output = Self;
+    fn not(self) -> Self::Output {
+        match self {
+            Ori::Hori => Self::Vert,
+            Ori::Vert => Self::Hori,
+        }
     }
 }

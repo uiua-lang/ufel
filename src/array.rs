@@ -8,9 +8,11 @@ use ecow::EcoVec;
 use crate::{cowslice::CowSlice, Form, Ufel, UfelResult};
 
 #[derive(Clone)]
+#[allow(clippy::manual_non_exhaustive)]
 pub struct Array<T = f64> {
     pub form: Form,
     pub data: CowSlice<T>,
+    _priv: (),
 }
 
 impl<T> Default for Array<T> {
@@ -18,19 +20,24 @@ impl<T> Default for Array<T> {
         Self {
             form: Form::empty_list(),
             data: CowSlice::new(),
+            _priv: (),
         }
     }
 }
 
 impl<T: Clone> Array<T> {
+    #[track_caller]
     pub fn new(form: Form, data: CowSlice<T>) -> Self {
-        Self { form, data }
+        let arr = Self {
+            form,
+            data,
+            _priv: (),
+        };
+        arr.validate_shape();
+        arr
     }
-    pub fn scalar(data: T) -> Self {
-        Self {
-            form: Form::scalar(),
-            data: CowSlice::from_elem(data, 1),
-        }
+    pub fn scalar(elem: T) -> Self {
+        Self::new(Form::scalar(), CowSlice::from_elem(elem, 1))
     }
     #[track_caller]
     pub fn validate_shape(&self) {
@@ -61,7 +68,7 @@ impl<T: Clone> Array<T> {
                 arr.data.extend_from_cowslice(row.data);
                 new_len += 1;
             }
-            arr.form.fix();
+            arr.form.fix(rt.ori());
             arr.form[0][0] = new_len;
             arr.validate_shape();
             Ok(arr)
@@ -117,47 +124,32 @@ impl<T: Clone> From<T> for Array<T> {
 
 impl<T: Clone> From<EcoVec<T>> for Array<T> {
     fn from(data: EcoVec<T>) -> Self {
-        Self {
-            form: data.len().into(),
-            data: data.into(),
-        }
+        Self::new(data.len().into(), data.into())
     }
 }
 
 impl<T: Clone> From<CowSlice<T>> for Array<T> {
     fn from(data: CowSlice<T>) -> Self {
-        Self {
-            form: data.len().into(),
-            data,
-        }
+        Self::new(data.len().into(), data)
     }
 }
 
 impl<T: Clone, const N: usize> From<[T; N]> for Array<T> {
     fn from(data: [T; N]) -> Self {
-        Self {
-            form: data.len().into(),
-            data: data.into(),
-        }
+        Self::new(data.len().into(), data.into())
     }
 }
 
 impl<T: Copy> From<&[T]> for Array<T> {
     fn from(data: &[T]) -> Self {
-        Self {
-            form: data.len().into(),
-            data: data.into(),
-        }
+        Self::new(data.len().into(), data.into())
     }
 }
 
 impl<T: Clone> FromIterator<T> for Array<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let data = CowSlice::from_iter(iter);
-        Self {
-            form: data.len().into(),
-            data,
-        }
+        Self::new(data.len().into(), data)
     }
 }
 
@@ -176,7 +168,7 @@ impl From<&[usize]> for Array {
 impl From<Form> for Array {
     fn from(form: Form) -> Self {
         let mut arr: Array = form.dims().into();
-        arr.form = Form::from([form.row_rank(), form.col_rank()]);
+        arr.form = Form::from([form.vert_rank(), form.hori_rank()]);
         arr
     }
 }

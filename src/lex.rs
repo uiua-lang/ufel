@@ -117,6 +117,7 @@ impl<'a> Lexer<'a> {
                     }
                     self.end(start, Token::Number);
                 }
+                '#' => while self.next_char_if(|c| c != '\n').is_some() {},
                 c => {
                     if let Some(prim) = Primitive::from_glyph(c) {
                         self.end(start, Token::Primitive(prim));

@@ -5,11 +5,13 @@
 | `identity` | `.` |  Do nothing with an array |
 | `negate` | `` ` `` |  Negate an array |
 | `not` | `n` |  Not an array |
-| `abs` | `a` |  Get the absolute value of an array |
+| `abs` | `b` |  Get the absolute value of an array |
 | `sign` | `g` |  Get the sign of an array |
 | `length` | `l` |  Get the length of an array |
 | `shape` | `h` |  Get the shape of an array |
 | `form` | `f` |  Get the form of an array |
+| `first` | `a` |  Get the first row of an array |
+| `transpose` | `t` |  Rotate the form of an array |
 
 ## Dyadic Functions
 
@@ -30,6 +32,7 @@
 
 | Name | Glyph | Description |
 | ---- | ----- | ----------- |
+| `turn` | `~` |  Call a function considering an array's form vertically rather than horizontally |
 | `self` | `'` |  Call a function with two copies of the same value |
 | `flip` | `"` |  Call a function with its arguments reversed |
 | `dip` | `,` |  Temporarily pop a value from the stack |
@@ -37,7 +40,7 @@
 | `by` | `q` |  Keep the last argument of a function below its outputs on the stack |
 | `both` | `&` |  Call the same function on two sets of arguments |
 | `reduce` | `r` |  Reduce with a function |
-| `scan` | `s` |  Scan with a function |
+| `scan` | `c` |  Scan with a function |
 
 ## Dyadic Modifiers
 

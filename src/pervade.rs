@@ -25,10 +25,7 @@ where
         {
             *c = f(a, b);
         }
-        Ok(Array {
-            form: a.form,
-            data: c_data.into(),
-        })
+        Ok(Array::new(a.form, c_data.into()))
     } else if a.form.is_prefix_of(&b.form) {
         let mut c_data = eco_vec![C::default(); b.form.elems()];
         let a_elem_count = a.form.elems();
@@ -39,10 +36,7 @@ where
                 *c = f(a.clone(), b.clone());
             }
         }
-        Ok(Array {
-            form: b.form,
-            data: c_data.into(),
-        })
+        Ok(Array::new(b.form, c_data.into()))
     } else if b.form.is_prefix_of(&a.form) {
         let mut c_data = eco_vec![C::default(); a.form.elems()];
         let b_elem_count = b.form.elems();
@@ -53,10 +47,7 @@ where
                 *c = f(a.clone(), b.clone());
             }
         }
-        Ok(Array {
-            form: a.form,
-            data: c_data.into(),
-        })
+        Ok(Array::new(a.form, c_data.into()))
     } else {
         Err(rt.error(format!(
             "Forms {:?} and {:?} are not compatible",

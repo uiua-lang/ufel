@@ -211,6 +211,16 @@ impl Node {
             node => Some(take(node)),
         }
     }
+    pub fn as_flipped_dy(&self) -> Option<(Dyadic, bool)> {
+        match self {
+            Node::Dy(prim, _) => Some((*prim, false)),
+            Node::Mod(Mod::Flip, f, _) => {
+                let (prim, flip) = f.node.as_flipped_dy()?;
+                Some((prim, !flip))
+            }
+            _ => None,
+        }
+    }
 }
 
 impl From<&[Node]> for Node {
@@ -280,7 +290,7 @@ impl Node {
             height: i32,
         }
         impl Checker {
-            fn handle_args_outputs(&mut self, args: usize, outputs: usize) {
+            fn handle(&mut self, args: usize, outputs: usize) {
                 self.height -= args as i32;
                 self.min_height = self.min_height.min(self.height);
                 self.height += outputs as i32;
@@ -296,36 +306,33 @@ impl Node {
                     Node::Run(nodes) => nodes.iter().for_each(|node| self.node(node)),
                     Node::Array(len, inner, _) => {
                         self.node(inner);
-                        self.handle_args_outputs(*len, 1);
+                        self.handle(*len, 1);
                     }
-                    Node::Push(_) => self.handle_args_outputs(0, 1),
-                    Node::Mon(_, _) => self.handle_args_outputs(1, 1),
-                    Node::Dy(_, _) => self.handle_args_outputs(2, 1),
+                    Node::Push(_) => self.handle(0, 1),
+                    Node::Mon(_, _) => self.handle(1, 1),
+                    Node::Dy(_, _) => self.handle(2, 1),
                     Node::Mod(m, f, _) => match m {
-                        Mod::Dip => self.handle_args_outputs(f.sig.args + 1, f.sig.outputs + 1),
-                        Mod::Reduce | Mod::Scan => self.handle_args_outputs(1, 1),
+                        Mod::Turn => self.handle(f.sig.args, f.sig.outputs),
+                        Mod::Dip => self.handle(f.sig.args + 1, f.sig.outputs + 1),
+                        Mod::Reduce | Mod::Scan => self.handle(1, 1),
                         Mod::Slf => {
-                            self.handle_args_outputs(1, 2);
-                            self.handle_args_outputs(f.sig.args, f.sig.outputs)
+                            self.handle(1, 2);
+                            self.handle(f.sig.args, f.sig.outputs)
                         }
                         Mod::Flip => {
-                            self.handle_args_outputs(2, 2);
-                            self.handle_args_outputs(f.sig.args, f.sig.outputs)
+                            self.handle(2, 2);
+                            self.handle(f.sig.args, f.sig.outputs)
                         }
-                        Mod::On | Mod::By => {
-                            self.handle_args_outputs(f.sig.args.max(1), f.sig.outputs + 1)
-                        }
-                        Mod::Both => self.handle_args_outputs(f.sig.args * 2, f.sig.outputs * 2),
+                        Mod::On | Mod::By => self.handle(f.sig.args.max(1), f.sig.outputs + 1),
+                        Mod::Both => self.handle(f.sig.args * 2, f.sig.outputs * 2),
                     },
                     Node::DyMod(m, f, g, _) => match m {
-                        DyMod::Fork => self.handle_args_outputs(
-                            f.sig.args.max(g.sig.args),
-                            f.sig.outputs + g.sig.outputs,
-                        ),
-                        DyMod::Bracket => self.handle_args_outputs(
-                            f.sig.args + g.sig.args,
-                            f.sig.outputs + g.sig.outputs,
-                        ),
+                        DyMod::Fork => {
+                            self.handle(f.sig.args.max(g.sig.args), f.sig.outputs + g.sig.outputs)
+                        }
+                        DyMod::Bracket => {
+                            self.handle(f.sig.args + g.sig.args, f.sig.outputs + g.sig.outputs)
+                        }
                     },
                 }
             }

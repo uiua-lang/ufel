@@ -3,8 +3,8 @@ use std::mem::take;
 use ecow::EcoString;
 
 use crate::{
-    Array, Assembly, Compiler, DyMod, Dyadic, InputSrc, Mod, Monadic, Node, SigNode, UfelError,
-    UfelErrorKind, UfelResult,
+    reduce::reduce, Array, Assembly, Compiler, DyMod, Dyadic, InputSrc, Mod, Monadic, Node, Ori,
+    SigNode, UfelError, UfelErrorKind, UfelResult,
 };
 
 #[derive(Clone, Default)]
@@ -12,6 +12,7 @@ pub struct Ufel {
     pub asm: Assembly,
     stack: Vec<Array>,
     trace: Vec<usize>,
+    ori: Ori,
 }
 
 impl Ufel {
@@ -27,6 +28,9 @@ impl Ufel {
     }
     pub fn run_str(&mut self, text: impl Into<EcoString>) -> UfelResult {
         self.run(InputSrc::Str, text.into())
+    }
+    pub fn ori(&self) -> Ori {
+        self.ori
     }
     pub fn exec(&mut self, node: Node) -> UfelResult {
         match node {
@@ -72,9 +76,11 @@ impl Ufel {
             Monadic::Not => a.not(),
             Monadic::Abs => a.abs(),
             Monadic::Sign => a.sign(),
-            Monadic::Len => a.form.row_count().into(),
-            Monadic::Shape => a.form.row_shape().into(),
+            Monadic::Len => a.form.row_count(self.ori).into(),
+            Monadic::Shape => a.form.shape(self.ori).as_ref().into(),
             Monadic::Form => a.form.into(),
+            Monadic::First => a.first(self)?,
+            Monadic::Transpose => a.transpose(self)?,
         };
         self.push(res);
         Ok(())
@@ -99,6 +105,12 @@ impl Ufel {
     }
     fn mon_mod(&mut self, prim: Mod, f: SigNode) -> UfelResult {
         match prim {
+            Mod::Turn => {
+                self.ori = !self.ori;
+                let res = self.exec(f.node);
+                self.ori = !self.ori;
+                res?
+            }
             Mod::Slf => {
                 let a = self.pop(1)?;
                 self.push(a.clone());
@@ -145,7 +157,7 @@ impl Ufel {
                 self.stack.extend(args.into_iter().rev());
                 self.exec(f.node)?;
             }
-            Mod::Reduce => todo!(),
+            Mod::Reduce => reduce(f, self)?,
             Mod::Scan => todo!(),
         }
         Ok(())
@@ -153,16 +165,16 @@ impl Ufel {
     fn dy_mod(&mut self, prim: DyMod, f: SigNode, g: SigNode) -> UfelResult {
         match prim {
             DyMod::Fork => {
-                let f_args = self.copy_n(f.sig.args)?;
-                self.exec(g.node)?;
-                self.stack.extend(f_args.into_iter().rev());
+                let g_args = self.copy_n(g.sig.args)?;
                 self.exec(f.node)?;
+                self.stack.extend(g_args);
+                self.exec(g.node)?;
             }
             DyMod::Bracket => {
-                let f_args = self.take_n(f.sig.args)?;
-                self.exec(g.node)?;
-                self.stack.extend(f_args.into_iter().rev());
+                let g_args = self.take_n(g.sig.args)?;
                 self.exec(f.node)?;
+                self.stack.extend(g_args);
+                self.exec(g.node)?;
             }
         }
         Ok(())

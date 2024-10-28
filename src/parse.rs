@@ -64,6 +64,7 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
         while let Some(item) = self.item() {
             items.push(item);
+            self.newline();
         }
         items
     }
