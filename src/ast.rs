@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{DyMod, Dyadic, MonMod, Monadic, Sp, Span};
+use crate::{DyMod, Dyadic, Mod, Monadic, Sp, Span};
 
 #[derive(Debug, Clone)]
 pub enum Item {
@@ -53,11 +53,29 @@ pub struct Modified {
 
 #[derive(Clone)]
 pub enum Modifier {
-    Mon(MonMod),
+    Mon(Mod),
     Dy(DyMod),
 }
 
+impl Modifier {
+    pub fn arg_count(&self) -> usize {
+        match self {
+            Self::Mon(_) => 1,
+            Self::Dy(_) => 2,
+        }
+    }
+}
+
 impl fmt::Debug for Modifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Modifier::Mon(m) => m.fmt(f),
+            Modifier::Dy(d) => d.fmt(f),
+        }
+    }
+}
+
+impl fmt::Display for Modifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Modifier::Mon(m) => m.fmt(f),

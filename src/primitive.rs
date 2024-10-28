@@ -1,6 +1,8 @@
+use std::fmt;
+
 use enum_iterator::{all, All, Sequence};
 
-primitive!(Mon(Monadic), Dy(Dyadic), MonMod(MonMod), DyMod(DyMod));
+primitive!(Mon(Monadic), Dy(Dyadic), MonMod(Mod), DyMod(DyMod));
 
 prim!(Monadic,
     /// Do nothing with an array
@@ -34,7 +36,7 @@ prim!(Dyadic,
     /// Check if an array is greater than another
     (Gt, "greater than", 'G'),
 );
-prim!(MonMod,
+prim!(Mod,
     /// Temporarily pop a value from the stack
     (Dip, "dip", ','),
     /// Reduce with a function
@@ -78,7 +80,7 @@ fn gen_prim_tables() {
         ),
         (
             "Monadic Modifiers",
-            MonMod::all()
+            Mod::all()
                 .map(|p| (p.name(), p.glyph(), p.description()))
                 .collect(),
         ),
@@ -118,9 +120,25 @@ fn gen_prim_tables() {
 
 macro_rules! primitive {
     ($($name:ident($ty:ty)),* $(,)?) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, Sequence)]
         pub enum Primitive {
             $($name($ty),)*
+        }
+
+        impl fmt::Debug for Primitive {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $(Self::$name(p) => p.fmt(f),)*
+                }
+            }
+        }
+
+        impl fmt::Display for Primitive {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $(Self::$name(p) => p.fmt(f),)*
+                }
+            }
         }
 
         impl PrimKind for Primitive {
@@ -171,9 +189,25 @@ macro_rules! prim {
             ($variant:ident, $name:literal, $glyph:literal)
         ),* $(,)?
     ) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, Sequence)]
         pub enum $prim {
             $($variant,)*
+        }
+
+        impl fmt::Debug for $prim {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $(Self::$variant => write!(f, "{} {}", $glyph, $name),)*
+                }
+            }
+        }
+
+        impl fmt::Display for $prim {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $(Self::$variant => write!(f, "{}", $glyph),)*
+                }
+            }
         }
 
         impl PrimKind for $prim {

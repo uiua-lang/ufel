@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref, path::PathBuf};
 
 use ecow::EcoString;
 
-use crate::{PrimKind, Primitive};
+use crate::{LocatedError, PrimKind, Primitive};
 
 pub fn lex(
     src: InputSrc,
@@ -311,6 +311,17 @@ impl Inputs {
     }
     pub fn human_sp<T>(&self, sp: Sp<T>) -> HumanSp<T> {
         Sp::new(sp.value, self.human_span(sp.span))
+    }
+    pub fn error(&self, span: Span, message: impl Into<EcoString>) -> LocatedError {
+        let text = self.inputs[span.src].text.as_str();
+        let span = self.human_span(span);
+        let message = message.into();
+        let line = text.split('\n').nth(span.start.line).unwrap();
+        LocatedError {
+            span,
+            message,
+            line: line.into(),
+        }
     }
 }
 

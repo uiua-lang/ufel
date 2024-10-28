@@ -2,7 +2,7 @@ use std::{env, fmt::Display, fs, path::Path, process::exit};
 
 use colored::Colorize;
 
-use ufel::{parse, InputSrc, Inputs};
+use ufel::{parse, InputSrc, Inputs, Ufel};
 
 fn fail<T>(e: impl Display) -> T {
     eprintln!("{e}");
@@ -84,13 +84,13 @@ fn run_maybe_path(path: Option<&Path>, empty: bool) {
 }
 
 fn run(src: InputSrc, text: &str) {
-    let mut inputs = Inputs::new();
-    let (items, errors) = parse(src, text, &mut inputs);
-    for item in items {
-        println!("{item:#?}");
+    let mut rt = Ufel::new();
+    let res = rt.run(src, text);
+    for val in rt.take_stack() {
+        println!("{val}");
     }
-    for error in errors {
-        println!("{}", inputs.human_sp(error))
+    if let Err(e) = res {
+        eprintln!("{e}");
     }
 }
 

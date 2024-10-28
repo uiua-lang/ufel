@@ -7,3 +7,4 @@ version = "0.1.0"
 colored = "2.1.0"
 ecow = "0.2.2"
 enum-iterator = "2.1.0"
+tinyvec = {version = "1.8.0", features = ["alloc"]}
