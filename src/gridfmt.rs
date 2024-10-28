@@ -38,10 +38,13 @@ impl Array {
             }
             for &dim in dims {
                 height *= dim;
-                height += dim.saturating_sub(1) * (j != 0) as usize;
+                if j > 0 {
+                    height += dim.saturating_sub(1);
+                }
                 j += 1;
             }
         }
+        height += (self.form.dims_rank() > 3) as usize * self.form.dims()[0].saturating_sub(1);
         height = height.max(self.form.dims_rank() - 1);
         height += 2;
         let mut grid = vec![' '; width * height];

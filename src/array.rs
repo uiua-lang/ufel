@@ -5,7 +5,7 @@ use std::{
 
 use ecow::EcoVec;
 
-use crate::{cowslice::CowSlice, Form, Ufel, UfelResult};
+use crate::{cowslice::CowSlice, Form, Ori, Ufel, UfelResult};
 
 #[derive(Clone)]
 #[allow(clippy::manual_non_exhaustive)]
@@ -74,6 +74,27 @@ impl<T: Clone> Array<T> {
             Ok(arr)
         } else {
             todo!("non-normal array creation")
+        }
+    }
+}
+
+impl<T: Clone + 'static> Array<T> {
+    pub fn into_rows(self, ori: Ori) -> Box<dyn Iterator<Item = Self>> {
+        let row_count = self.form.row_count(ori);
+        let row_form = self.form.row(ori);
+        let row_len = row_form.elems();
+        match ori {
+            Ori::Hori => Box::new((0..row_count).map(move |i| {
+                let data = self.data.slice(i * row_len..(i + 1) * row_len);
+                Array::new(row_form.clone(), data)
+            })),
+            Ori::Vert => Box::new((0..row_count).map(move |i| {
+                let mut data = EcoVec::with_capacity(row_len);
+                for j in 0..row_len {
+                    data.push(self.data[i * row_len + j].clone());
+                }
+                Array::new(row_form.clone(), data.into())
+            })),
         }
     }
 }

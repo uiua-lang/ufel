@@ -46,6 +46,7 @@ fn reduce_pervasive<T: Clone>(
     f: impl Fn(T, T) -> T,
     ori: Ori,
 ) -> Array<T> {
+    let f = flip(f);
     if a.form.is_scalar() {
         return a;
     }
@@ -91,4 +92,21 @@ fn reduce_pervasive<T: Clone>(
             Array::new(row_form, acc.into())
         }
     }
+}
+
+pub fn fold(f: SigNode, rt: &mut Ufel) -> UfelResult {
+    if f.sig.args != f.sig.outputs + 1 {
+        return Err(rt.error(format!(
+            "{:?}ed function must have 1 fewer arguments \
+            than outputs, but its signature is {:?}",
+            Mod::Fold,
+            f.sig
+        )));
+    }
+    let a = rt.pop(1)?;
+    for a in a.into_rows(rt.ori()) {
+        rt.push(a);
+        rt.exec(f.node.clone())?;
+    }
+    Ok(())
 }

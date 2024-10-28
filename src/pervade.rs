@@ -82,6 +82,24 @@ pub mod sign {
     }
 }
 
+pub mod floor {
+    pub fn num(a: f64) -> f64 {
+        a.floor()
+    }
+}
+
+pub mod ceil {
+    pub fn num(a: f64) -> f64 {
+        a.ceil()
+    }
+}
+
+pub mod round {
+    pub fn num(a: f64) -> f64 {
+        a.round()
+    }
+}
+
 // Dyadic
 
 pub mod add {
@@ -119,6 +137,7 @@ pub mod eq {
         (a == b) as u8 as f64
     }
 }
+
 pub mod ne {
     pub fn num_num(a: f64, b: f64) -> f64 {
         (a != b) as u8 as f64

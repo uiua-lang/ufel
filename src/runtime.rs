@@ -3,8 +3,9 @@ use std::mem::take;
 use ecow::EcoString;
 
 use crate::{
-    reduce::reduce, Array, Assembly, Compiler, DyMod, Dyadic, InputSrc, Mod, Monadic, Node, Ori,
-    SigNode, UfelError, UfelErrorKind, UfelResult,
+    reduce::{fold, reduce},
+    Array, Assembly, Compiler, DyMod, Dyadic, InputSrc, Mod, Monadic, Node, Ori, SigNode,
+    UfelError, UfelErrorKind, UfelResult,
 };
 
 #[derive(Clone, Default)]
@@ -33,6 +34,13 @@ impl Ufel {
         self.ori
     }
     pub fn exec(&mut self, node: Node) -> UfelResult {
+        // Uncomment to debug
+        // for val in &self.stack {
+        //     print!("{val} ");
+        // }
+        // println!();
+        // println!("{node:?} ");
+
         match node {
             Node::Run(nodes) => {
                 for node in nodes {
@@ -76,11 +84,15 @@ impl Ufel {
             Monadic::Not => a.not(),
             Monadic::Abs => a.abs(),
             Monadic::Sign => a.sign(),
+            Monadic::Floor => a.floor(),
+            Monadic::Ceil => a.ceil(),
+            Monadic::Round => a.round(),
             Monadic::Len => a.form.row_count(self.ori).into(),
             Monadic::Shape => a.form.shape(self.ori).as_ref().into(),
             Monadic::Form => a.form.into(),
             Monadic::Range => a.range(self)?,
             Monadic::First => a.first(self)?,
+            Monadic::Reverse => a.reverse(self.ori()),
             Monadic::Transpose => a.transpose(self)?,
             Monadic::Swap => a.swap(self)?,
         };
@@ -161,7 +173,8 @@ impl Ufel {
                 self.exec(f.node)?;
             }
             Mod::Reduce => reduce(f, self)?,
-            Mod::Scan => todo!("scan"),
+            Mod::Scan => return Err(self.error("Scan is not yet implemented")),
+            Mod::Fold => fold(f, self)?,
         }
         Ok(())
     }

@@ -1,3 +1,5 @@
+use std::ptr;
+
 use ecow::{eco_vec, EcoVec};
 
 use crate::{cowslice::CowSlice, Array, Element, Form, FormDims, Monadic, Ori, Ufel, UfelResult};
@@ -77,6 +79,37 @@ impl<T: Element> Array<T> {
             }
         })
     }
+    pub fn reverse(mut self, ori: Ori) -> Self {
+        let row_count = self.form.row_count(ori);
+        let row_len = self.form.row_len(ori);
+        dbg!(&row_count, &row_len, &self.form);
+        let data = self.data.as_mut_slice();
+        match ori {
+            Ori::Hori => {
+                for i in 0..row_count / 2 {
+                    let left = i * row_len;
+                    let right = (row_count - i - 1) * row_len;
+                    let left = &mut data[left] as *mut T;
+                    let right = &mut data[right] as *mut T;
+                    unsafe {
+                        ptr::swap_nonoverlapping(left, right, row_len);
+                    }
+                }
+            }
+            Ori::Vert => {
+                for i in 0..row_count / 2 {
+                    let left = i * row_len;
+                    let right = (row_count - i - 1) * row_len;
+                    let left = &mut data[left] as *mut T;
+                    let right = &mut data[right] as *mut T;
+                    unsafe {
+                        ptr::swap_nonoverlapping(left, right, row_len);
+                    }
+                }
+            }
+        }
+        self
+    }
     pub fn transpose(self, rt: &Ufel) -> UfelResult<Self> {
         let mut axes: Vec<usize> = (0..self.form.dims_rank()).collect();
         let stride = self.form.hori_rank();
@@ -97,7 +130,13 @@ impl<T: Element> Array<T> {
             self.form = new_form;
             return Ok(self);
         }
-        self.move_axes(new_form.dims(), rt)
+        let mut dest: Vec<usize> = Vec::with_capacity(self.form.dims_rank());
+        for j in 0..self.form.hori_rank() {
+            for i in 0..self.form.vert_rank() {
+                dest.push(i * self.form.hori_rank() + j);
+            }
+        }
+        self.move_axes(&dest, rt)
     }
     pub(crate) fn move_axes(self, indices: &[usize], rt: &Ufel) -> UfelResult<Self> {
         fn derive_orient_data(

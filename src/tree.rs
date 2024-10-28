@@ -312,7 +312,7 @@ impl Node {
                     Node::Mon(_, _) => self.handle(1, 1),
                     Node::Dy(_, _) => self.handle(2, 1),
                     Node::Mod(m, f, _) => match m {
-                        Mod::Turn => self.handle(f.sig.args, f.sig.outputs),
+                        Mod::Turn | Mod::Fold => self.handle(f.sig.args, f.sig.outputs),
                         Mod::Dip => self.handle(f.sig.args + 1, f.sig.outputs + 1),
                         Mod::Reduce | Mod::Scan => self.handle(1, 1),
                         Mod::Slf => {

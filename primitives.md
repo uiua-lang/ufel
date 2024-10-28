@@ -4,14 +4,18 @@
 | ---- | ----- | ----------- |
 | `identity` | `.` |  Do nothing with an array |
 | `negate` | `` ` `` |  Negate an array |
-| `not` | `n` |  Not an array |
+| `not` | `!` |  Not an array |
 | `abs` | `b` |  Get the absolute value of an array |
-| `sign` | `g` |  Get the sign of an array |
-| `length` | `l` |  Get the length of an array |
+| `sign` | `p` |  Get the sign of an array |
+| `floor` | `l` |  Take the floor of an array |
+| `ceiling` | `g` |  Take the ceiling of an array |
+| `round` | `d` |  Round an array |
+| `length` | `n` |  Get the length of an array |
 | `shape` | `h` |  Get the shape of an array |
-| `form` | `f` |  Get the form of an array |
+| `form` | `m` |  Get the form of an array |
 | `range` | `i` |  Generate a range of numbers or indices for a form |
 | `first` | `a` |  Get the first row of an array |
+| `reverse` | `z` |  Reverse an array |
 | `transpose` | `t` |  Rotate the form of an array |
 | `swap` | `w` |  Swap the axes of an array's form |
 
@@ -29,7 +33,7 @@
 | `greater than` | `G` |  Check if an array is greater than another |
 | `min` | `N` |  Get the minimum of two arrays |
 | `max` | `X` |  Get the maximum of two arrays |
-| `chunk` | `K` |  Chunk an array |
+| `chunk` | `C` |  Chunk an array |
 
 ## Monadic Modifiers
 
@@ -43,7 +47,8 @@
 | `by` | `q` |  Keep the last argument of a function below its outputs on the stack |
 | `both` | `&` |  Call the same function on two sets of arguments |
 | `reduce` | `r` |  Reduce with a function |
-| `scan` | `c` |  Scan with a function |
+| `scan` | `k` |  Scan with a function |
+| `fold` | `v` |  Fold a fuction over an array and some accumulators |
 
 ## Dyadic Modifiers
 

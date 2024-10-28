@@ -6,6 +6,9 @@ mon!(neg);
 mon!(not);
 mon!(abs);
 mon!(sign);
+mon!(floor);
+mon!(ceil);
+mon!(round);
 
 dy!(add);
 dy!(sub);

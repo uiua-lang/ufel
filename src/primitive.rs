@@ -10,21 +10,29 @@ prim!(Monadic,
     /// Negate an array
     (Neg, "negate", '`'),
     /// Not an array
-    (Not, "not", 'n'),
+    (Not, "not", '!'),
     /// Get the absolute value of an array
     (Abs, "abs", 'b'),
     /// Get the sign of an array
-    (Sign, "sign", 'g'),
+    (Sign, "sign", 'p'),
+    /// Take the floor of an array
+    (Floor, "floor", 'l'),
+    /// Take the ceiling of an array
+    (Ceil, "ceiling", 'g'),
+    /// Round an array
+    (Round, "round", 'd'),
     /// Get the length of an array
-    (Len, "length", 'l'),
+    (Len, "length", 'n'),
     /// Get the shape of an array
     (Shape, "shape", 'h'),
     /// Get the form of an array
-    (Form, "form", 'f'),
+    (Form, "form", 'm'),
     /// Generate a range of numbers or indices for a form
     (Range, "range", 'i'),
     /// Get the first row of an array
     (First, "first", 'a'),
+    /// Reverse an array
+    (Reverse, "reverse", 'z'),
     /// Rotate the form of an array
     (Transpose, "transpose", 't'),
     /// Swap the axes of an array's form
@@ -52,7 +60,7 @@ prim!(Dyadic,
     /// Get the maximum of two arrays
     (Max, "max", 'X'),
     /// Chunk an array
-    (Chunk, "chunk", 'K'),
+    (Chunk, "chunk", 'C'),
 );
 prim!(Mod,
     /// Call a function considering an array's form vertically rather than horizontally
@@ -75,7 +83,9 @@ prim!(Mod,
     /// Reduce with a function
     (Reduce, "reduce", 'r'),
     /// Scan with a function
-    (Scan, "scan", 'c'),
+    (Scan, "scan", 'k'),
+    /// Fold a fuction over an array and some accumulators
+    (Fold, "fold", 'v'),
 );
 prim!(DyMod,
     /// Call two functions on the same sets of values
@@ -248,7 +258,7 @@ macro_rules! prim {
         impl fmt::Debug for $prim {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
-                    $(Self::$variant => write!(f, "{} {}", $glyph, $name),)*
+                    $(Self::$variant => write!(f, "({}){}", $glyph, $name),)*
                 }
             }
         }
