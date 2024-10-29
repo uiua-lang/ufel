@@ -43,6 +43,7 @@
 | `self` | `'` |  Call a function with two copies of the same value |
 | `flip` | `"` |  Call a function with its arguments reversed |
 | `dip` | `,` |  Temporarily pop a value from the stack |
+| `gap` | `;` |  Pop a value from the stack |
 | `on` | `o` |  Keep the first argument of a function on top of the stack |
 | `by` | `q` |  Keep the last argument of a function below its outputs on the stack |
 | `both` | `&` |  Call the same function on two sets of arguments |

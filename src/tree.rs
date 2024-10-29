@@ -314,6 +314,7 @@ impl Node {
                     Node::Mod(m, f, _) => match m {
                         Mod::Turn | Mod::Fold => self.handle(f.sig.args, f.sig.outputs),
                         Mod::Dip => self.handle(f.sig.args + 1, f.sig.outputs + 1),
+                        Mod::Gap => self.handle(f.sig.args + 1, f.sig.outputs),
                         Mod::Reduce | Mod::Scan => self.handle(1, 1),
                         Mod::Slf => {
                             self.handle(1, 2);

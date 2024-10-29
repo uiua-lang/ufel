@@ -74,6 +74,8 @@ prim!(Mod,
     (Flip, "flip", '"'),
     /// Temporarily pop a value from the stack
     (Dip, "dip", ','),
+    /// Pop a value from the stack
+    (Gap, "gap", ';'),
     /// Keep the first argument of a function on top of the stack
     (On, "on", 'o'),
     /// Keep the last argument of a function below its outputs on the stack
