@@ -144,6 +144,10 @@ impl Ufel {
                 self.exec(f.node)?;
                 self.stack.push(a?);
             }
+            Mod::Gap => {
+                let _ = self.pop(1);
+                self.exec(f.node)?;
+            }
             Mod::On => {
                 let a = self.pop(1)?;
                 self.push(a.clone());
